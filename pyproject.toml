@@ -1,0 +1,21 @@
+[tool.poetry]
+name = "hefs-fews-hub"
+version = "0.1.0"
+description = ""
+authors = ["Sam Lamont <slamont@rit.org>"]
+license = "MIT"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.10"
+
+
+[tool.poetry.group.dev.dependencies]
+boto3 = "^1.35.17"
+jupyterlab = "^4.2.5"
+ipywidgets = "^8.1.5"
+nbstripout = "^0.7.1"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
