@@ -74,8 +74,6 @@ RUN mkdir Desktop
 COPY scripts/start_dashboard.sh Desktop/start_dashboard.sh
 COPY scripts/dashboard.desktop Desktop/dashboard.desktop
 RUN chmod -R 777 Desktop
-# RUN chmod -R 777 Desktop/start_dashboard.sh
-# RUN chmod -R 777 Desktop/dashboard.desktop
 
 COPY firefox/firefox-130.0.tar.bz2 Downloads/firefox-130.0.tar.bz2
 RUN tar xjf Downloads/firefox-*.tar.bz2
