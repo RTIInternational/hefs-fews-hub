@@ -51,7 +51,7 @@ RUN export PATH=${NB_PYTHON_PREFIX}/bin:${PATH} \
         https://github.com/jupyterhub/jupyter-remote-desktop-proxy/archive/main.zip
 
 
-# # Download FEWS binaries from s3
+# # Download FEWS binaries from s3?
 # RUN aws s3 cp s3://ciroh-rti-hefs-data/fews-NA-202102-115469-bin.zip /opt/fews/fews-NA-202102-115469-bin.zip
 # RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/
 
@@ -60,16 +60,11 @@ COPY fews/fews-NA-202102-115469-bin.zip /opt/fews/fews-NA-202102-115469-bin.zip
 RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/ \
  && chown -R jovyan:jovyan /opt/fews
 
-# RUN rm /opt/fews/fews-NA-202102-115469-bin.zip
-# COPY fews-NA-202102-125264-patch.jar /opt/fews/fews-NA-202102-125264-patch.jar
-# RUN mkdir /opt/fews
-
 # Copy in the python notebook and scripts
 RUN mkdir hefs_fews
-COPY scripts/dashboard.ipynb hefs_fews/dashboard.ipynb
-COPY scripts/dashboard_funcs.py hefs_fews/dashboard_funcs.py
-COPY scripts/start_dashboard.sh hefs_fews/start_dashboard.sh
+COPY scripts/dashboard.ipynb scripts/dashboard_funcs.py scripts/start_dashboard.sh hefs_fews/
 COPY images/index_getting_started.svg hefs_fews/index_getting_started.svg
+COPY images/CIROHLogo_200x200.png hefs_fews/CIROHLogo_200x200.png
 RUN chown -R jovyan:jovyan hefs_fews && chmod +x hefs_fews/start_dashboard.sh
 
 # Create Desktop dir and copy in the dashboard desktop file
@@ -78,11 +73,11 @@ COPY scripts/dashboard.desktop Desktop/dashboard.desktop
 RUN chown -R jovyan:jovyan Desktop && chmod +x Desktop/dashboard.desktop
 
 # Install Firefox
-RUN wget -P Downloads https://ftp.mozilla.org/pub/firefox/releases/130.0/linux-x86_64/en-US/firefox-130.0.tar.bz2
-RUN tar xjf Downloads/firefox-*.tar.bz2
-RUN mv firefox /opt
-RUN ln -s /opt/firefox/firefox /usr/local/bin/firefox
-RUN rm -r .cache
+RUN wget -P Downloads https://ftp.mozilla.org/pub/firefox/releases/130.0/linux-x86_64/en-US/firefox-130.0.tar.bz2 \
+ && tar xjf Downloads/firefox-*.tar.bz2 \
+ && mv firefox /opt \
+ && ln -s /opt/firefox/firefox /usr/local/bin/firefox \
+ && rm -r .cache
 
 # INSTALL TEEHR FROM GITHUB?
 
