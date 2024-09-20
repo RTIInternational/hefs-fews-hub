@@ -37,7 +37,7 @@ def create_start_standalone_command(
 
 
 def _opener(path, flags):
-    return os.open(path, flags, 0o777)
+    return os.open(path, flags, 0o755)
 
 
 def write_shell_file(
@@ -45,6 +45,7 @@ def write_shell_file(
         bash_command: str
 ) -> None:
     """Write a shell script file to the remote desktop."""
+    print(f"Opening and writing {output_file_path} shell script.")
     os.umask(0)
     with open(output_file_path, "w", opener=_opener) as f:
         f.write("#!/bin/bash\n")
@@ -68,32 +69,32 @@ def write_fews_desktop_shortcut(
     return
 
 
-def write_voila_shell_file(
-        output_file_path: Union[str, Path]
-) -> None:
-    """Write a shell script file to the remote desktop."""
-    os.umask(0)
-    with open(output_file_path, "w", opener=_opener) as f:
-        f.write("#!/bin/bash\n")
-        f.write("voila /home/jovyan/dashboard.ipynb")
-        f.write("firefox http://localhost:8867/")
-    return
+# def write_voila_shell_file(
+#         output_file_path: Union[str, Path]
+# ) -> None:
+#     """Write a shell script file to the remote desktop."""
+#     os.umask(0)
+#     with open(output_file_path, "w", opener=_opener) as f:
+#         f.write("#!/bin/bash\n")
+#         f.write("voila /home/jovyan/dashboard.ipynb")
+#         f.write("firefox http://localhost:8867/")
+#     return
 
 
-def write_voila_desktop_shortcut(
-        output_filepath: Union[str, Path],
-        shell_script_filepath: Union[str, Path]
-) -> None:
-    """Write a desktop shortcut file to the remote desktop."""
-    os.umask(0)
-    with open(Path(output_filepath), "w", opener=_opener) as f:
-        f.write("[Desktop Entry]\n")
-        f.write("Name=Launch Dashboard\n")
-        f.write("Type=Application\n")
-        f.write(f"Exec={shell_script_filepath}\n")
-        f.write("Terminal=false\n")
-        # f.write("Icon=/opt/fews/linux/fews_large.png\n")
-    return
+# def write_voila_desktop_shortcut(
+#         output_filepath: Union[str, Path],
+#         shell_script_filepath: Union[str, Path]
+# ) -> None:
+#     """Write a desktop shortcut file to the remote desktop."""
+#     os.umask(0)
+#     with open(Path(output_filepath), "w", opener=_opener) as f:
+#         f.write("[Desktop Entry]\n")
+#         f.write("Name=Launch Dashboard\n")
+#         f.write("Type=Application\n")
+#         f.write(f"Exec={shell_script_filepath}\n")
+#         f.write("Terminal=false\n")
+#         # f.write("Icon=/opt/fews/linux/fews_large.png\n")
+#     return
 
 
 def s3_download_file(remote_filepath: str, local_filepath: str) -> None:

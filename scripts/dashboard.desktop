@@ -1,5 +1,6 @@
 [Desktop Entry]
-Name=Launch Dashboard
+Name=Launch HEFS-FEWS Dashboard
 Type=Application
-Exec=/home/jovyan/Desktop/start_dashboard.sh
+Exec=/home/jovyan/hefs_fews/start_dashboard.sh
 Terminal=false
+Icon=/home/jovyan/hefs_fews/index_getting_started.svg

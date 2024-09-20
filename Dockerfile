@@ -54,27 +54,30 @@ RUN export PATH=${NB_PYTHON_PREFIX}/bin:${PATH} \
 # # Download FEWS binaries from s3
 # RUN aws s3 cp s3://ciroh-rti-hefs-data/fews-NA-202102-115469-bin.zip /opt/fews/fews-NA-202102-115469-bin.zip
 # RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/
-# RUN chmod -R 777 /opt/fews
 
 # Copy in FEWS binaries from local directory
 COPY fews/fews-NA-202102-115469-bin.zip /opt/fews/fews-NA-202102-115469-bin.zip
-RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/
-RUN chmod -R 777 /opt/fews
+RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/ \
+ && chown -R jovyan:jovyan /opt/fews
 
 # RUN rm /opt/fews/fews-NA-202102-115469-bin.zip
 # COPY fews-NA-202102-125264-patch.jar /opt/fews/fews-NA-202102-125264-patch.jar
 # RUN mkdir /opt/fews
 
 # Copy in the python notebook and scripts
-COPY scripts/dashboard.ipynb .
-COPY scripts/dashboard_funcs.py .
+RUN mkdir hefs_fews
+COPY scripts/dashboard.ipynb hefs_fews/dashboard.ipynb
+COPY scripts/dashboard_funcs.py hefs_fews/dashboard_funcs.py
+COPY scripts/start_dashboard.sh hefs_fews/start_dashboard.sh
+COPY images/index_getting_started.svg hefs_fews/index_getting_started.svg
+RUN chown -R jovyan:jovyan hefs_fews && chmod +x hefs_fews/start_dashboard.sh
 
-# Copy in dashboard stuff
+# Create Desktop dir and copy in the dashboard desktop file
 RUN mkdir Desktop
-COPY scripts/start_dashboard.sh Desktop/start_dashboard.sh
 COPY scripts/dashboard.desktop Desktop/dashboard.desktop
-RUN chmod -R 777 Desktop
+RUN chown -R jovyan:jovyan Desktop && chmod +x Desktop/dashboard.desktop
 
+# Install Firefox
 COPY firefox/firefox-130.0.tar.bz2 Downloads/firefox-130.0.tar.bz2
 RUN tar xjf Downloads/firefox-*.tar.bz2
 RUN mv firefox /opt
