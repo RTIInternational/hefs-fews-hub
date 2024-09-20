@@ -78,7 +78,7 @@ COPY scripts/dashboard.desktop Desktop/dashboard.desktop
 RUN chown -R jovyan:jovyan Desktop && chmod +x Desktop/dashboard.desktop
 
 # Install Firefox
-COPY firefox/firefox-130.0.tar.bz2 Downloads/firefox-130.0.tar.bz2
+RUN wget -P Downloads https://ftp.mozilla.org/pub/firefox/releases/130.0/linux-x86_64/en-US/firefox-130.0.tar.bz2
 RUN tar xjf Downloads/firefox-*.tar.bz2
 RUN mv firefox /opt
 RUN ln -s /opt/firefox/firefox /usr/local/bin/firefox
