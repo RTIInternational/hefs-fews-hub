@@ -114,4 +114,5 @@ def s3_list_contents(prefix: str) -> List[str]:
         Bucket=BUCKET_NAME,
         Prefix=prefix
     )
-    return [content["Key"] for content in response["Contents"]]
+    filelist = [content["Key"] for content in response["Contents"]]
+    return filelist

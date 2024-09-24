@@ -50,6 +50,10 @@ RUN export PATH=${NB_PYTHON_PREFIX}/bin:${PATH} \
  && pip install --no-cache-dir \
         https://github.com/jupyterhub/jupyter-remote-desktop-proxy/archive/main.zip
 
+# Install TEEHR
+RUN pip install 'teehr @ git+https://github.com/RTIInternational/teehr@main'
+
+# Install jupyter-server-proxy?
 
 # # Download FEWS binaries from s3?
 # RUN aws s3 cp s3://ciroh-rti-hefs-data/fews-NA-202102-115469-bin.zip /opt/fews/fews-NA-202102-115469-bin.zip
@@ -73,13 +77,11 @@ COPY scripts/dashboard.desktop Desktop/dashboard.desktop
 RUN chown -R jovyan:jovyan Desktop && chmod +x Desktop/dashboard.desktop
 
 # Install Firefox
-RUN wget -P Downloads https://ftp.mozilla.org/pub/firefox/releases/130.0/linux-x86_64/en-US/firefox-130.0.tar.bz2 \
+RUN wget -P Downloads https://ftp.mozilla.org/pub/firefox/releases/131.0b9/linux-x86_64/en-US/firefox-131.0b9.tar.bz2 \
  && tar xjf Downloads/firefox-*.tar.bz2 \
  && mv firefox /opt \
  && ln -s /opt/firefox/firefox /usr/local/bin/firefox \
  && rm -r .cache
-
-# INSTALL TEEHR FROM GITHUB?
 
 USER ${NB_USER}
 
