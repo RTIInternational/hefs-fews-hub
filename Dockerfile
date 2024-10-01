@@ -65,11 +65,11 @@ RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/ \
  && chown -R jovyan:jovyan /opt/fews
 
 # Copy in the python notebook and scripts
-RUN mkdir hefs_fews
-COPY scripts/dashboard.ipynb scripts/dashboard_funcs.py scripts/start_dashboard.sh hefs_fews/
-COPY images/index_getting_started.svg hefs_fews/index_getting_started.svg
-COPY images/CIROHLogo_200x200.png hefs_fews/CIROHLogo_200x200.png
-RUN chown -R jovyan:jovyan hefs_fews && chmod +x hefs_fews/start_dashboard.sh
+RUN mkdir hefs_fews_dashboard
+COPY scripts/dashboard.ipynb scripts/dashboard_funcs.py scripts/start_dashboard.sh hefs_fews_dashboard/
+COPY images/index_getting_started.svg hefs_fews_dashboard/index_getting_started.svg
+COPY images/CIROHLogo_200x200.png hefs_fews_dashboard/CIROHLogo_200x200.png
+RUN chown -R jovyan:jovyan hefs_fews_dashboard && chmod +x hefs_fews_dashboard/start_dashboard.sh
 
 # Create Desktop dir and copy in the dashboard desktop file
 RUN mkdir Desktop
