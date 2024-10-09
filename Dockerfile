@@ -60,8 +60,9 @@ RUN pip install 'teehr @ git+https://github.com/RTIInternational/teehr@v0.4-beta
 
 # Copy in FEWS binaries from local directory
 COPY fews/fews-NA-202102-115469-bin.zip /opt/fews/fews-NA-202102-115469-bin.zip
-RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/ \
- && chown -R jovyan:jovyan /opt/fews
+# RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/ \
+#  && chown -R jovyan:jovyan /opt/fews
+RUN chown -R jovyan:jovyan /opt/fews
 
 # Copy in the python notebook and scripts
 RUN mkdir hefs_fews_dashboard
