@@ -3,10 +3,13 @@ import os
 from pathlib import Path
 import shutil
 from typing import Union, List
+from concurrent import futures
 
 import boto3
 
 BUCKET_NAME = "ciroh-rti-hefs-data"
+
+s3_client = boto3.client('s3')
 
 
 def extract_archive(
@@ -69,34 +72,6 @@ def write_fews_desktop_shortcut(
     return
 
 
-# def write_voila_shell_file(
-#         output_file_path: Union[str, Path]
-# ) -> None:
-#     """Write a shell script file to the remote desktop."""
-#     os.umask(0)
-#     with open(output_file_path, "w", opener=_opener) as f:
-#         f.write("#!/bin/bash\n")
-#         f.write("voila /home/jovyan/dashboard.ipynb")
-#         f.write("firefox http://localhost:8867/")
-#     return
-
-
-# def write_voila_desktop_shortcut(
-#         output_filepath: Union[str, Path],
-#         shell_script_filepath: Union[str, Path]
-# ) -> None:
-#     """Write a desktop shortcut file to the remote desktop."""
-#     os.umask(0)
-#     with open(Path(output_filepath), "w", opener=_opener) as f:
-#         f.write("[Desktop Entry]\n")
-#         f.write("Name=Launch Dashboard\n")
-#         f.write("Type=Application\n")
-#         f.write(f"Exec={shell_script_filepath}\n")
-#         f.write("Terminal=false\n")
-#         # f.write("Icon=/opt/fews/linux/fews_large.png\n")
-#     return
-
-
 def s3_download_file(remote_filepath: str, local_filepath: str) -> None:
     """Download a file from an S3 bucket."""
     Path(local_filepath).parent.mkdir(exist_ok=True, parents=True)
@@ -105,6 +80,49 @@ def s3_download_file(remote_filepath: str, local_filepath: str) -> None:
         BUCKET_NAME, remote_filepath, local_filepath
     )
     return
+
+
+def s3_download_directory(prefix, local, bucket=BUCKET_NAME):
+    """Download a directory from an S3 bucket."""
+    client = boto3.client('s3')
+
+    def create_folder_and_download_file(k):
+        dest_pathname = os.path.join(local, k)
+        if not os.path.exists(os.path.dirname(dest_pathname)):
+            os.makedirs(os.path.dirname(dest_pathname))
+        # print(f'downloading {k} to {dest_pathname}')
+        client.download_file(bucket, k, dest_pathname)
+
+    keys = []
+    dirs = []
+    next_token = ''
+    base_kwargs = {
+        'Bucket': bucket,
+        'Prefix': prefix,
+    }
+    while next_token is not None:
+        kwargs = base_kwargs.copy()
+        if next_token != '':
+            kwargs.update({'ContinuationToken': next_token})
+        results = client.list_objects_v2(**kwargs)
+        contents = results.get('Contents')
+        for i in contents:
+            k = i.get('Key')
+            if k[-1] != '/':
+                keys.append(k)
+            else:
+                dirs.append(k)
+        next_token = results.get('NextContinuationToken')
+    for d in dirs:
+        dest_pathname = os.path.join(local, d)
+        if not os.path.exists(os.path.dirname(dest_pathname)):
+            os.makedirs(os.path.dirname(dest_pathname))
+    with futures.ThreadPoolExecutor() as executor:
+        futures.wait(
+            [executor.submit(create_folder_and_download_file, k) for k in keys],
+            return_when=futures.FIRST_EXCEPTION,
+        )
+    print("Download complete.")
 
 
 def s3_list_contents(prefix: str) -> List[str]:
@@ -116,3 +134,8 @@ def s3_list_contents(prefix: str) -> List[str]:
     )
     filelist = [content["Key"] for content in response["Contents"]]
     return filelist
+
+
+# if __name__ == "__main__":
+#     s3_download_directory("ABRFC", "/home/sam/temp/abrfc", BUCKET_NAME)
+#     pass

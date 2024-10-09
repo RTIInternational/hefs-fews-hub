@@ -3,7 +3,8 @@
 # and linked from here:
 # https://github.com/2i2c-org/infrastructure/issues/1444#issuecomment-1187405324
 
-FROM pangeo/pangeo-notebook:2024.03.13
+# FROM pangeo/pangeo-notebook:2024.03.13
+FROM pangeo/pangeo-notebook:2024.10.01
 # FROM pangeo/base-notebook:latest
 
 USER root
@@ -51,7 +52,7 @@ RUN export PATH=${NB_PYTHON_PREFIX}/bin:${PATH} \
         https://github.com/jupyterhub/jupyter-remote-desktop-proxy/archive/main.zip
 
 # Install TEEHR
-RUN pip install 'teehr @ git+https://github.com/RTIInternational/teehr@main'
+RUN pip install 'teehr @ git+https://github.com/RTIInternational/teehr@v0.4-beta'
 
 # Install jupyter-server-proxy?
 
@@ -82,6 +83,13 @@ RUN wget -P Downloads https://ftp.mozilla.org/pub/firefox/releases/131.0b9/linux
  && mv firefox /opt \
  && ln -s /opt/firefox/firefox /usr/local/bin/firefox \
  && rm -r .cache
+
+# # For firefox
+# RUN install -d -m 0755 /etc/apt/keyrings \
+#   && wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null \
+#   && echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | tee -a /etc/apt/sources.list.d/mozilla.list > /dev/null \
+#   $$ echo 'Package: *Pin: origin packages.mozilla.orgPin-Priority: 1000' | tee /etc/apt/preferences.d/mozilla \
+#   && apt-get update && apt-get install firefox -y
 
 USER ${NB_USER}
 
