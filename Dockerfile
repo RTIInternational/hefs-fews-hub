@@ -3,9 +3,7 @@
 # and linked from here:
 # https://github.com/2i2c-org/infrastructure/issues/1444#issuecomment-1187405324
 
-# FROM pangeo/pangeo-notebook:2024.03.13
 FROM pangeo/pangeo-notebook:2024.10.01
-# FROM pangeo/base-notebook:latest
 
 USER root
 ENV DEBIAN_FRONTEND=noninteractive
