@@ -30,8 +30,8 @@ jobs:
     steps:
       - name: Checkout repository
         uses: actions/checkout@v3
-        # with:
-        #   lfs: true
+        with:
+          lfs: true
 
       # Store the version, stripping any v-prefix
       - name: Write release version
