@@ -1,6 +1,22 @@
 # hefs-fews-hub
 A Docker file and collection of python scripts supporting the exploration of HEFS ensembles using FEWS within the TEEHRHub jupyterhub deployment. Part of a CIROH-supported project.
 
+Warning! This is currently highly experimental!
+
+### Signing in to HEFS-FEWS at TEEHR-Hub
+1. Go to `https://teehr-hub.rtiamanzi.org/hub/spawn`
+2. Sign in with your github account (you'll need to create one if you don't have it)
+3. From the list, select `HEFS-FEWS Evaluation System`. Click `Start`
+4. When JupyterHub starts, Go to Desktop
+5. The first time you login, open the terminal in the Desktop and run `cp /opt/hefs_fews_dashboard/dashboard.desktop .`  This will create a desktop icon to start the dashboard.  You should only need to do this once.
+6. Select the RFC you wish to work with
+7. Specify a directory path. Data downloaded to the `/home/jovyan` directory will persist between sessions.
+8. After downloading the configuration, click the FEWS icon to start FEWS.
+
+Things to watch out for:
+* If the remote desktop is idle for too long, you may get logged out and may need to restart TEEHRHub!
+
+
 ### Using AWS CLI to copy files to/from the s3 bucket
 An AWS s3 bucket was created: `ciroh-rti-hefs-data`. Read permissions are publicly available however you will need special credentials to write to the bucket.
 
