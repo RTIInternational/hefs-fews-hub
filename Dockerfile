@@ -60,21 +60,26 @@ RUN pip install 'teehr @ git+https://github.com/RTIInternational/teehr@v0.4-beta
 
 # Copy in FEWS binaries from local directory
 COPY fews/fews-NA-202102-115469-bin.zip /opt/fews/fews-NA-202102-115469-bin.zip
-# RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/ \
-#  && chown -R jovyan:jovyan /opt/fews
-RUN chown -R jovyan:jovyan /opt/fews
+RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/ \
+ && chown -R jovyan:jovyan /opt/fews
+# RUN chown -R jovyan:jovyan /opt/fews
+
+RUN mkdir /opt/data
+RUN chown -R jovyan:jovyan /opt/data
 
 # Copy in the python notebook and scripts
-RUN mkdir hefs_fews_dashboard
-COPY scripts/dashboard.ipynb scripts/dashboard_funcs.py scripts/start_dashboard.sh hefs_fews_dashboard/
-COPY images/index_getting_started.svg hefs_fews_dashboard/index_getting_started.svg
-COPY images/CIROHLogo_200x200.png hefs_fews_dashboard/CIROHLogo_200x200.png
-RUN chown -R jovyan:jovyan hefs_fews_dashboard && chmod +x hefs_fews_dashboard/start_dashboard.sh
+# RUN mkdir /opt/hefs_fews_dashboard
+COPY scripts/dashboard.ipynb scripts/dashboard_funcs.py scripts/start_dashboard.sh /opt/hefs_fews_dashboard/
+COPY images/index_getting_started.svg /opt/hefs_fews_dashboard/index_getting_started.svg
+COPY images/CIROHLogo_200x200.png /opt/hefs_fews_dashboard/CIROHLogo_200x200.png
+RUN chown -R jovyan:jovyan /opt/hefs_fews_dashboard && chmod +x /opt/hefs_fews_dashboard/start_dashboard.sh
 
 # Create Desktop dir and copy in the dashboard desktop file
-RUN mkdir Desktop
-COPY scripts/dashboard.desktop Desktop/dashboard.desktop
-RUN chown -R jovyan:jovyan Desktop && chmod +x Desktop/dashboard.desktop
+# RUN mkdir Desktop
+# COPY scripts/dashboard.desktop Desktop/dashboard.desktop
+COPY scripts/dashboard.desktop /opt/hefs_fews_dashboard/dashboard.desktop
+# RUN chown -R jovyan:jovyan Desktop && chmod +x /opt/hefs_fews_dashboard/dashboard.desktop
+RUN chmod +x /opt/hefs_fews_dashboard/dashboard.desktop
 
 # Install Firefox
 RUN wget -P Downloads https://ftp.mozilla.org/pub/firefox/releases/131.0b9/linux-x86_64/en-US/firefox-131.0b9.tar.bz2 \
