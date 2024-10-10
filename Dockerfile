@@ -68,8 +68,8 @@ RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/ \
  && chown -R jovyan:jovyan /opt/fews
 # RUN chown -R jovyan:jovyan /opt/fews
 
-RUN mkdir /opt/data
-RUN chown -R jovyan:jovyan /opt/data
+RUN mkdir /opt/data \
+ && chown -R jovyan:jovyan /opt/data
 
 # Copy in the python notebook and scripts
 # RUN mkdir /opt/hefs_fews_dashboard
