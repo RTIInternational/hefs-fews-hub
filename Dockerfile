@@ -52,6 +52,9 @@ RUN export PATH=${NB_PYTHON_PREFIX}/bin:${PATH} \
 # Install TEEHR
 RUN pip install 'teehr @ git+https://github.com/RTIInternational/teehr@v0.4-beta'
 
+# Install git-lfs
+RUN apt-get update && apt-get install git-lfs -y
+
 # Install jupyter-server-proxy?
 
 # # Download FEWS binaries from s3?
