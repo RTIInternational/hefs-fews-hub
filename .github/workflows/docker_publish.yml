@@ -104,21 +104,10 @@ jobs:
 
       - name: Sign image with a key
         run: |
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY  ghcr.io/${{ github.repository }}:latest
+          cosign sign --yes --key env://COSIGN_PRIVATE_KEY  ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tags }}
         env:
           COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
           COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-
-      # - name: Sign the images with GitHub OIDC Token
-      #   env:
-      #     DIGEST: ${{ steps.build-and-push.outputs.digest }}
-      #     TAGS: ${{ steps.docker_meta.outputs.tags }}
-      #   run: |
-      #     images=""
-      #     for tag in ${TAGS}; do
-      #       images+="${tag}@${DIGEST} "
-      #     done
-      #     cosign sign --yes ${images}
 
       # ==============================
       # Now try to build and push to AWS ERC
