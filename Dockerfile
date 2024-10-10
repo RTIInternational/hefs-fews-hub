@@ -60,9 +60,10 @@ RUN pip install 'teehr @ git+https://github.com/RTIInternational/teehr@v0.4-beta
 
 # Copy in FEWS binaries from local directory
 COPY fews/fews-NA-202102-115469-bin.zip /opt/fews/fews-NA-202102-115469-bin.zip
-RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/ \
- && chown -R jovyan:jovyan /opt/fews
-# RUN chown -R jovyan:jovyan /opt/fews
+# Uncomment lines 64-65 for local testing
+# RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/ \
+#  && chown -R jovyan:jovyan /opt/fews
+RUN chown -R jovyan:jovyan /opt/fews
 
 RUN mkdir /opt/data
 RUN chown -R jovyan:jovyan /opt/data
