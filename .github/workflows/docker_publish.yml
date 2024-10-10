@@ -88,26 +88,12 @@ jobs:
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
 
-      # # https://docs.github.com/en/actions/security-guides/security-hardening-for-github-actions#using-an-intermediate-environment-variable
       # - name: Sign image with a key
       #   run: |
-      #     images=""
-      #     for tag in ${TAGS}; do
-      #       images+="${tag}@${DIGEST} "
-      #     done
-      #     cosign sign --yes --key env://COSIGN_KEY ${images}
+      #     cosign sign --yes --key env://COSIGN_PRIVATE_KEY  ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tags }}
       #   env:
-      #     TAGS: ${{ steps.docker_meta.outputs.tags }}
-      #     COSIGN_KEY: ${{ secrets.COSIGN_KEY }}
+      #     COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
       #     COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
-      #     DIGEST: ${{ steps.build-and-push.outputs.digest }}
-
-      - name: Sign image with a key
-        run: |
-          cosign sign --yes --key env://COSIGN_PRIVATE_KEY  ghcr.io/${{ github.repository }}:${{ steps.meta.outputs.tags }}
-        env:
-          COSIGN_PRIVATE_KEY: ${{ secrets.COSIGN_PRIVATE_KEY }}
-          COSIGN_PASSWORD: ${{ secrets.COSIGN_PASSWORD }}
 
       # ==============================
       # Now try to build and push to AWS ERC
