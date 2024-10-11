@@ -24,7 +24,9 @@ RUN apt-get -y update \
    xorg \
    xubuntu-icon-theme \
    curl \
- && rm -rf /var/lib/apt/lists/*
+ && rm -rf /var/lib/apt/lists/* \
+# Disable the automatic screenlock since the account password is unknown
+ && apt-get -y -qq remove xfce4-screensaver
 
 # Install Node.js and npm
 RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \

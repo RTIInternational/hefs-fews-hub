@@ -4,6 +4,7 @@ from pathlib import Path
 import shutil
 from typing import Union, List
 from concurrent import futures
+import subprocess
 
 import boto3
 
@@ -82,8 +83,24 @@ def s3_download_file(remote_filepath: str, local_filepath: str) -> None:
     return
 
 
+def s3_download_directory_cli(prefix, local, bucket=BUCKET_NAME):
+    """Download a directory from an S3 bucket using AWS CLI."""
+    subprocess.run(
+            [
+                "aws",
+                "s3",
+                "cp",
+                f"s3://{bucket}/{prefix}",
+                local,
+                "--recursive",
+                "--only-show-errors"
+            ],
+        )
+    return
+
+
 def s3_download_directory(prefix, local, bucket=BUCKET_NAME):
-    """Download a directory from an S3 bucket."""
+    """Download a directory from an S3 bucket using boto3."""
     client = boto3.client('s3')
 
     def create_folder_and_download_file(k):
