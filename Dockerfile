@@ -65,26 +65,29 @@ RUN apt-get update && apt-get install git-lfs -y
 
 # Copy in FEWS binaries from local directory
 COPY fews/fews-NA-202102-115469-bin.zip /opt/fews/fews-NA-202102-115469-bin.zip
-# Uncomment lines 64-65 for local testing
 RUN unzip /opt/fews/fews-NA-202102-115469-bin.zip -d /opt/fews/ \
  && chown -R jovyan:jovyan /opt/fews
-# RUN chown -R jovyan:jovyan /opt/fews
 
 RUN mkdir /opt/data \
  && chown -R jovyan:jovyan /opt/data
 
 # Copy in the python notebook and scripts
-# RUN mkdir /opt/hefs_fews_dashboard
-COPY scripts/dashboard.ipynb scripts/dashboard_funcs.py scripts/start_dashboard.sh /opt/hefs_fews_dashboard/
+
+# IPywidgets
+# COPY scripts/dashboard.ipynb scripts/dashboard_funcs.py scripts/start_dashboard.sh /opt/hefs_fews_dashboard/
+# COPY images/index_getting_started.svg /opt/hefs_fews_dashboard/index_getting_started.svg
+# COPY images/CIROHLogo_200x200.png /opt/hefs_fews_dashboard/CIROHLogo_200x200.png
+# Panel
+COPY playground/panel_dashboard.py playground/dashboard_funcs.py playground/start_dashboard.sh /opt/hefs_fews_dashboard/
+COPY playground/geo/rfc_boundaries.geojson /opt/hefs_fews_dashboard/rfc_boundaries.geojson
 COPY images/index_getting_started.svg /opt/hefs_fews_dashboard/index_getting_started.svg
 COPY images/CIROHLogo_200x200.png /opt/hefs_fews_dashboard/CIROHLogo_200x200.png
 RUN chown -R jovyan:jovyan /opt/hefs_fews_dashboard && chmod +x /opt/hefs_fews_dashboard/start_dashboard.sh
+COPY playground/panel_requirements.txt /opt/hefs_fews_dashboard/
+RUN pip install -r /opt/hefs_fews_dashboard/panel_requirements.txt
 
 # Create Desktop dir and copy in the dashboard desktop file
-# RUN mkdir Desktop
-# COPY scripts/dashboard.desktop Desktop/dashboard.desktop
 COPY scripts/dashboard.desktop /opt/hefs_fews_dashboard/dashboard.desktop
-# RUN chown -R jovyan:jovyan Desktop && chmod +x /opt/hefs_fews_dashboard/dashboard.desktop
 RUN chmod +x /opt/hefs_fews_dashboard/dashboard.desktop
 
 # Install Firefox
@@ -94,7 +97,7 @@ RUN wget -P Downloads https://ftp.mozilla.org/pub/firefox/releases/131.0b9/linux
  && ln -s /opt/firefox/firefox /usr/local/bin/firefox \
  && rm -r .cache
 
-# # For firefox
+# # For firefox??
 # RUN install -d -m 0755 /etc/apt/keyrings \
 #   && wget -q https://packages.mozilla.org/apt/repo-signing-key.gpg -O- | tee /etc/apt/keyrings/packages.mozilla.org.asc > /dev/null \
 #   && echo "deb [signed-by=/etc/apt/keyrings/packages.mozilla.org.asc] https://packages.mozilla.org/apt mozilla main" | tee -a /etc/apt/sources.list.d/mozilla.list > /dev/null \
