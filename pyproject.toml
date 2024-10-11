@@ -16,6 +16,14 @@ jupyterlab = "^4.2.5"
 ipywidgets = "^8.1.5"
 nbstripout = "^0.7.1"
 
+
+[tool.poetry.group.panel.dependencies]
+panel = "^1.5.2"
+watchfiles = "^0.24.0"
+jupyter-bokeh = "^4.0.5"
+ipyleaflet = "^0.19.2"
+ipywidgets-bokeh = "^1.6.0"
+
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
