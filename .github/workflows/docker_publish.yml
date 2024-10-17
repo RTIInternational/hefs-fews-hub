@@ -135,7 +135,7 @@ jobs:
       #     build-args: |
       #       "AWS_ACCESS_KEY_ID=${{ secrets.AWS_READ_ONLY_ACCESS_KEY_ID }}"
       #       "AWS_SECRET_ACCESS_KEY=${{ secrets.AWS_READ_ONLY_SECRET_ACCESS_KEY_ID }}"
-        name: Build and push
+      - name: Build and push
         uses: docker/build-push-action@v6
         with:
           push: true
