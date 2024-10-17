@@ -104,6 +104,18 @@ RUN wget -P Downloads https://ftp.mozilla.org/pub/firefox/releases/131.0b9/linux
 #   $$ echo 'Package: *Pin: origin packages.mozilla.orgPin-Priority: 1000' | tee /etc/apt/preferences.d/mozilla \
 #   && apt-get update && apt-get install firefox -y
 
+# COPY playground/jupyter-panel-proxy.yml /opt/hefs_fews_dashboard/jupyter-panel-proxy.yml
+# RUN jupyter server extension enable panel.io.jupyter_server_extension
+
+# ENV BOKEH_ALLOW_WS_ORIGIN "*"
+
+# Run the web service on container startup.
+# CMD panel serve /opt/hefs_fews_dashboard/panel_dashboard.py --allow-websocket-origin="*" --port 8888 --autoreload --address 0.0.0.0 --static-dirs
+
+RUN aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID \
+ && aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY \
+ && aws configure set default.region us-east-2
+
 USER ${NB_USER}
 
 WORKDIR /home/jovyan
