@@ -9,6 +9,9 @@ USER root
 ENV DEBIAN_FRONTEND=noninteractive
 ENV PATH ${NB_PYTHON_PREFIX}/bin:$PATH
 
+ARG AWS_ACCESS_KEY_ID
+ARG AWS_SECRET_ACCESS_KEY
+
 # Needed for apt-key to work
 RUN apt-get update -qq --yes > /dev/null && \
     apt-get install --yes -qq gnupg2 > /dev/null && \
@@ -112,10 +115,10 @@ RUN wget -P Downloads https://ftp.mozilla.org/pub/firefox/releases/131.0b9/linux
 # Run the web service on container startup.
 # CMD panel serve /opt/hefs_fews_dashboard/panel_dashboard.py --allow-websocket-origin="*" --port 8888 --autoreload --address 0.0.0.0 --static-dirs
 
+USER ${NB_USER}
+
 RUN aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID \
  && aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY \
  && aws configure set default.region us-east-2
-
-USER ${NB_USER}
 
 WORKDIR /home/jovyan
