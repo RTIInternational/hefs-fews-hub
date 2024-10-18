@@ -5,6 +5,7 @@ import shutil
 from typing import Union, List
 from concurrent import futures
 import subprocess
+import logging
 
 import boto3
 
@@ -12,6 +13,20 @@ BUCKET_NAME = "ciroh-rti-hefs-data"
 FEWS_INSTALL_DIR = Path("/opt", "fews")
 
 s3_client = boto3.client('s3')
+
+
+def set_up_logger(file_path: Union[str, Path]) -> logging.Logger:
+    """Set up a logger for the dashboard."""
+    logger = logging.getLogger("HEFS-Dashboard")
+    logger.setLevel(logging.INFO)
+    handler = logging.FileHandler(file_path)
+    handler.setLevel(logging.INFO)
+    formatter = logging.Formatter(
+        '%(asctime)s,%(msecs)d %(name)s %(levelname)s %(message)s'
+    )
+    handler.setFormatter(formatter)
+    logger.addHandler(handler)
+    return logger
 
 
 def extract_archive(
@@ -61,12 +76,13 @@ def write_shell_file(
 def write_fews_desktop_shortcut(
         output_filepath: Union[str, Path],
         shell_script_filepath: Union[str, Path],
+        rfc_name: str
 ) -> None:
     """Write a desktop shortcut file to the remote desktop."""
     os.umask(0)
     with open(Path(output_filepath), "w", opener=_opener) as f:
         f.write("[Desktop Entry]\n")
-        f.write(f"Name=FEWS.{Path(output_filepath).name}\n")
+        f.write(f"Name=FEWS.{rfc_name}\n")
         f.write("Type=Application\n")
         f.write(f"Exec={shell_script_filepath}\n")
         f.write("Terminal=false\n")
