@@ -263,51 +263,51 @@ def download_from_s3_using_boto3(
 
 if __name__ == "__main__":
 
-    # ========================================================================
-    # Create combined json files for each variable and resolution.
-    # 1. Build a list of remote GEFS filepaths.
-    # 2. Build zarr references (individual json files).
-    # 3. Combine variables in mzz file.
-    # 4. Open with xaaray.
-    # 5. Subset and write to grib or netcdf.
     t0 = time.time()
 
-    client = Client()
-    logger.info(client.dashboard_link)
+    # # ========================================================================
+    # # Create combined json files for each variable and resolution.
+    # # 1. Build a list of remote GEFS filepaths.
+    # # 2. Build zarr references (individual json files).
+    # # 3. Combine variables in mzz file.
+    # # 4. Open with xaaray.
+    # # 5. Subset and write to grib or netcdf.
 
-    start_date = "2000-01-01"
-    end_date = "2000-01-01"
+    # client = Client()
+    # logger.info(client.dashboard_link)
 
-    remote_s3_paths = build_remote_gefs_filelist(
-        start_date=start_date,
-        end_date=end_date
-    )
+    # start_date = "2000-01-01"
+    # end_date = "2000-01-01"
 
-    json_paths = build_zarr_references(
-        remote_paths=remote_s3_paths,
-        json_dir=MESSAGE_JSON_DIR,
-        ignore_missing_file=True
-    )
+    # remote_s3_paths = build_remote_gefs_filelist(
+    #     start_date=start_date,
+    #     end_date=end_date
+    # )
 
-    combine_variables(
-        resolution="Days:1-10",
-        concat_dims=["step", "time", "number"]
-    )
+    # json_paths = build_zarr_references(
+    #     remote_paths=remote_s3_paths,
+    #     json_dir=MESSAGE_JSON_DIR,
+    #     ignore_missing_file=True
+    # )
 
-    print(f"Elapsed time: {time.time() - t0}")
-    # ========================================================================
+    # combine_variables(
+    #     resolution="Days:1-10",
+    #     concat_dims=["step", "time", "number"]
+    # )
+
+    # print(f"Elapsed time: {time.time() - t0}")
+    # # ========================================================================
 
     # Path("/mnt/data/ciroh/hefs/gefs/temp", "test_mzz.nc").unlink()
 
-    test_path = "/home/sam/temp/gefs_mzz_jsons/apcp_sfc_Days:1-10.json"
-    ds = return_ds(test_path)
+    # test_path = "/home/sam/temp/gefs_mzz_jsons/apcp_sfc_Days:1-10.json"
+    # ds = return_ds(test_path)
     # ds = ds.drop_vars(["surface", "valid_time"])
 
     # logger.info("Subsetting to CONUS.")
     # # ds_temp = ds.isel(step=1, number=1, time=1)
     # ds_conus = ds.sel(latitude=slice(56, 18), longitude=slice(233, 295))
 
-    pass
     # ds_tmp = ds.sel(latitude=slice(77, 15), longitude=slice(175, 240))
 
 
@@ -327,10 +327,15 @@ if __name__ == "__main__":
     # ds_conus.to_netcdf(Path("/mnt/data/ciroh/hefs/gefs/combined", "test_mzz.nc"), encoding=encoding)
 
     # ========================================================================
-    # Downloading the raw files from S3 given the remote s3 paths.
-    # download_from_s3_using_boto3(remote_s3_paths, "/mnt/data/ciroh/hefs/gefs/raw_grib2")
+    start_date = "2000-01-01"
+    end_date = "2000-01-01"
 
-    # import cfgrib
-    # dscf = cfgrib.open_file("/mnt/data/ciroh/hefs/gefs/acpcp_sfc_2000010100_c00_day1_10.grib2")
+    remote_s3_paths = build_remote_gefs_filelist(
+        start_date=start_date,
+        end_date=end_date
+    )
+
+    # Downloading the raw files from S3 given the remote s3 paths.
+    download_from_s3_using_boto3(remote_s3_paths, "/mnt/data/ciroh/hefs/gefs/raw_grib2_test")
 
     print(f"Elapsed time: {time.time() - t0}")
