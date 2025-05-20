@@ -42,14 +42,14 @@ import logging
 import time
 
 import boto3
-import dask
-from dask.distributed import Client
+# import dask
+# from dask.distributed import Client
 import fsspec
-import ujson  # fast json
-from kerchunk.grib2 import scan_grib
-from kerchunk.combine import MultiZarrToZarr
+# import ujson  # fast json
+# from kerchunk.grib2 import scan_grib
+# from kerchunk.combine import MultiZarrToZarr
 import pandas as pd
-import xarray as xr
+# import xarray as xr
 # from cfgrib.xarray_to_grib import to_grib
 
 GEFS_BUCKET_DIR = "noaa-gefs-retrospective/GEFSv12/reforecast"
@@ -122,14 +122,14 @@ def make_json_name(url, grib_message_number, json_dir):
     return f'{json_dir}/{Path(p[8]).stem}_{p[7]}_m{grib_message_number:03d}.json'
 
 
-@dask.delayed
-def gen_json(file_url, json_dir):
-    """ref: https://nbviewer.org/gist/rsignell-usgs/ce2c9faeeb006bbd189a8818ffadb133"""
-    out = scan_grib(file_url, storage_options=S3_SO)
-    for i, message in enumerate(out):  # scan_grib outputs a list containing one reference file per grib message
-        out_file_name = make_json_name(file_url, i, json_dir)  # get name
-        with FS_LOCAL.open(out_file_name, "w") as f:
-            f.write(ujson.dumps(message))  # write to file
+# @dask.delayed
+# def gen_json(file_url, json_dir):
+#     """ref: https://nbviewer.org/gist/rsignell-usgs/ce2c9faeeb006bbd189a8818ffadb133"""
+#     out = scan_grib(file_url, storage_options=S3_SO)
+#     for i, message in enumerate(out):  # scan_grib outputs a list containing one reference file per grib message
+#         out_file_name = make_json_name(file_url, i, json_dir)  # get name
+#         with FS_LOCAL.open(out_file_name, "w") as f:
+#             f.write(ujson.dumps(message))  # write to file
 
 
 def build_zarr_references(
@@ -210,23 +210,19 @@ def build_remote_gefs_filelist(
             f"{gefs_dir}/{dt.year}/{yyyymmddhh}"
         )
 
-        # All members and resolutions for specified variables.
-        for variable in variables:
-            glob_path = f"{hourly_path}/**/**/{variable}_*.grib2"
-            result = fs.glob(glob_path)
-            component_paths.extend(result)
-
-        # # If you want to split up the paths for some reason.
+        # # All members and resolutions for specified variables.
         # for variable in variables:
-        #     for forecast_resolution in RESOLUTION_SPLITS:
-        #         for member in member_forecasts:
-        #             glob_path = f"{hourly_path}/{member}/{forecast_resolution}/{variable}_*.grib2"
-        #             result = fs.glob(glob_path)
-        #             component_paths.extend(result)
-        #         logger.warning("BREAK! - Remove this line")
-        #         break
-        # logger.warning("BREAK! - Remove this line")
-        # break
+        #     glob_path = f"{hourly_path}/**/**/{variable}_*.grib2"
+        #     result = fs.glob(glob_path)
+        #     component_paths.extend(result)
+
+        # If you want to split up the paths for some reason.
+        for variable in variables:
+            for forecast_resolution in RESOLUTION_SPLITS:
+                for member in member_forecasts:
+                    glob_path = f"{hourly_path}/{member}/{forecast_resolution}/{variable}_*.grib2"
+                    result = fs.glob(glob_path)
+                    component_paths.extend(result)
 
     component_paths = sorted([f"s3://{path}" for path in component_paths])
 
@@ -332,7 +328,8 @@ if __name__ == "__main__":
 
     remote_s3_paths = build_remote_gefs_filelist(
         start_date=start_date,
-        end_date=end_date
+        end_date=end_date,
+        member_forecasts=["c00"]
     )
 
     # Downloading the raw files from S3 given the remote s3 paths.
