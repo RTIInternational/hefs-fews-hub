@@ -3,7 +3,7 @@
 # and linked from here:
 # https://github.com/2i2c-org/infrastructure/issues/1444#issuecomment-1187405324
 
-FROM pangeo/pangeo-notebook:2024.10.01
+FROM pangeo/pangeo-notebook:2025.01.24
 # FROM 935462133478.dkr.ecr.us-east-2.amazonaws.com/teehr:v0.4-beta
 
 USER root
@@ -33,12 +33,19 @@ RUN apt-get -y update \
 # Disable the automatic screenlock since the account password is unknown
  && apt-get -y -qq remove xfce4-screensaver
 
+ # Add 32-bit stuff
+RUN dpkg --add-architecture i386 \
+ && apt-get update -qq --yes > /dev/null \
+ && apt-get install -y --no-install-recommends \
+    libc6:i386 \
+    libstdc++6:i386 
+
 # Install Node.js and npm
 RUN curl -sL https://deb.nodesource.com/setup_16.x | bash - \
     && apt-get install -y nodejs
 
 # Install TurboVNC (https://github.com/TurboVNC/turbovnc)
-ARG TURBOVNC_VERSION=2.2.6
+ARG TURBOVNC_VERSION=3.1
 RUN wget -q "https://sourceforge.net/projects/turbovnc/files/${TURBOVNC_VERSION}/turbovnc_${TURBOVNC_VERSION}_amd64.deb/download" -O turbovnc.deb \
  && apt-get update -qq --yes > /dev/null \
  && apt-get install -y ./turbovnc.deb > /dev/null \
@@ -50,6 +57,11 @@ RUN wget -q "https://sourceforge.net/projects/turbovnc/files/${TURBOVNC_VERSION}
 
 RUN mamba install -n ${CONDA_ENV} -y websockify ipywidgets-bokeh plotly
 
+# RUN mamba uninstall jupyter-panel-proxy -y \
+RUN mamba install -n ${CONDA_ENV} -y jupyter-server-proxy \
+ && mamba install -n ${CONDA_ENV} -y panel \
+ && mamba clean --all --yes
+
 # Install jupyter-remote-desktop-proxy with compatible npm version
 RUN export PATH=${NB_PYTHON_PREFIX}/bin:${PATH} \
  && npm install -g npm@7.24.0 \
@@ -57,7 +69,7 @@ RUN export PATH=${NB_PYTHON_PREFIX}/bin:${PATH} \
         https://github.com/jupyterhub/jupyter-remote-desktop-proxy/archive/main.zip
 
 # Install TEEHR
-RUN pip install 'teehr @ git+https://github.com/RTIInternational/teehr@v0.4-beta'
+# RUN pip install 'teehr @ git+https://github.com/RTIInternational/teehr@v0.4.13'
 
 # Install git-lfs
 RUN apt-get update && apt-get install git-lfs -y
@@ -76,16 +88,13 @@ COPY images/CIROHLogo_200x200.png /opt/hefs_fews_dashboard/CIROHLogo_200x200.png
 
 COPY scripts/dashboard.desktop /opt/hefs_fews_dashboard/dashboard.desktop
 
-COPY playground/panel_dash.ipynb panel_dash_TEST.ipynb
+COPY playground/panel_dash.ipynb panel_dash.ipynb
 COPY playground/dashboard_funcs.py dashboard_funcs.py
-RUN chown jovyan:jovyan panel_dash_TEST.ipynb
+RUN chown jovyan:jovyan panel_dash.ipynb
 RUN chown jovyan:jovyan dashboard_funcs.py
 
-# COPY jupyter-panel-proxy.yml .
-# RUN chown jovyan:jovyan jupyter-panel-proxy.yml
-
-RUN chown -R jovyan:jovyan /opt/hefs_fews_dashboard && chmod +x /opt/hefs_fews_dashboard/start_dashboard.sh \
- && chmod +x /opt/hefs_fews_dashboard/dashboard.desktop
+# RUN chown -R jovyan:jovyan /opt/hefs_fews_dashboard && chmod +x /opt/hefs_fews_dashboard/start_dashboard.sh \
+#  && chmod +x /opt/hefs_fews_dashboard/dashboard.desktop
 
 # # Install Firefox
 # RUN wget -P Downloads https://ftp.mozilla.org/pub/firefox/releases/131.0b9/linux-x86_64/en-US/firefox-131.0b9.tar.bz2 \
@@ -101,18 +110,21 @@ RUN chown -R jovyan:jovyan /opt/hefs_fews_dashboard && chmod +x /opt/hefs_fews_d
 #   $$ echo 'Package: *Pin: origin packages.mozilla.orgPin-Priority: 1000' | tee /etc/apt/preferences.d/mozilla \
 #   && apt-get update && apt-get install firefox -y
 
-# COPY playground/jupyter-panel-proxy.yml /etc/jupyter/jupyter-panel-proxy.yml
+# COPY jupyter-panel-proxy.yml /etc/jupyter/jupyter-panel-proxy.yml
 # RUN jupyter server extension enable panel.io.jupyter_server_extension
 # ENV BOKEH_ALLOW_WS_ORIGIN "*"
+# EXPOSE 8888
+COPY jupyter_server_config.py /etc/jupyter/jupyter_server_config.py
+# COPY jupyter_notebook_config.py /etc/jupyter/jupyter_notebook_config.py
 
 # For local testing
 # RUN chown -R jovyan:jovyan .aws
 
 USER ${NB_USER}
 
-# For local testing
-RUN aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID \
- && aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY \
- && aws configure set default.region us-east-2
+# # For local testing
+# RUN aws configure set aws_access_key_id $AWS_ACCESS_KEY_ID \
+#  && aws configure set aws_secret_access_key $AWS_SECRET_ACCESS_KEY \
+#  && aws configure set default.region us-east-2
 
 WORKDIR /home/jovyan

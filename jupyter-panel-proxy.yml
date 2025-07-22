@@ -1,5 +1,5 @@
 ---
-apps:
-  - playground/panel_dash.ipynb
-# command: panel serve playground/panel_dash.ipynb --port 8888 --allow-websocket-origin="*"
+# apps:
+#   - playground/panel_dash_TEST.ipynb
+# command: panel serve playground/panel_dash_TEST.ipynb --port {port} --allow-websocket-origin="*"
 # absolute-url: True
