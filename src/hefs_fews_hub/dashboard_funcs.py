@@ -107,7 +107,7 @@ def s3_download_directory_cli(prefix, local, bucket=BUCKET_NAME):
                 "aws",
                 "s3",
                 "cp",
-                f"s3://{bucket}/{prefix}",
+                f"s3://{bucket}/HEFS_FEWS/{prefix}",
                 local,
                 "--recursive",
                 "--only-show-errors"
