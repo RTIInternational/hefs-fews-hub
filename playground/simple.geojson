@@ -1,0 +1,24 @@
+{
+  "type": "FeatureCollection",
+  "features": [
+    {
+      "type": "Feature",
+      "properties": {
+        "BASIN_ID": "TEST",
+        "name": "Test Basin"
+      },
+      "geometry": {
+        "type": "Polygon",
+        "coordinates": [
+          [
+            [-100.0, 40.0],
+            [-100.0, 35.0],
+            [-95.0, 35.0],
+            [-95.0, 40.0],
+            [-100.0, 40.0]
+          ]
+        ]
+      }
+    }
+  ]
+}

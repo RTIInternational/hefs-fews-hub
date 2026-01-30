@@ -1,5 +1,22 @@
 # jupyter-panel-proxy.yml
+# Configuration for jupyter-panel-proxy
+# See: https://github.com/holoviz/jupyter-panel-proxy
+
+# Specify which apps to serve (can be file paths or glob patterns)
 apps:
-  - /opt/hefs_fews_dashboard/panel_dashboard.py
-command: panel serve /opt/hefs_fews_dashboard/panel_dashboard.py --port 8888 --allow-websocket-origin="*"
-absolute-url: True
+  - /home/fkluiben/git/fork/hefs-fews-hub/src/hefs_fews_hub/panel_dashboard.py
+  - /home/fkluiben/git/fork/hefs-fews-hub/src/hefs_fews_hub/panel_dashboard_notebook.ipynb
+
+# Log level
+log_level: debug
+
+# Enable development mode (auto-reload on changes)
+dev: true
+
+# Warm up apps on startup
+warm: true
+
+# Launcher entry configuration (controls the Panel tile in JupyterLab launcher)
+launcher_entry:
+  enabled: true
+  title: Panel Apps
