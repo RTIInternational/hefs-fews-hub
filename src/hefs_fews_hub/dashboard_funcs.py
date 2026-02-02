@@ -170,8 +170,8 @@ def install_fews_standalone(download_dir: str, rfc: str) -> None:
     # 1. Download sa from S3
     logger.info(f"Downloading {rfc} configuration to {fews_download_dir.as_posix()}...This will take a few minutes...")
     s3_download_directory_cli(
-        prefix=f"{rfc}/Config",
-        local=Path(fews_download_dir, f"{rfc}/Config").as_posix(),
+        prefix=f"{rfc}",
+        local=Path(fews_download_dir, f"{rfc}").as_posix(),
     )
     # 2. Create the bash command to run the standalone configuration
     logger.info("Creating bash command to start FEWS...")
@@ -185,17 +185,6 @@ def install_fews_standalone(download_dir: str, rfc: str) -> None:
     shell_script_filepath = Path(sa_dir_path, "start_fews_standalone.sh")
     write_shell_file(shell_script_filepath, bash_command_str)
 
-    # 4. Copy in patch file for the downloaded standalone config.
-    logger.info("Downloading patch file and global properties...")
-    s3_download_file(
-        remote_filepath="fews-install/fews-NA-202102-125264-patch.jar",
-        local_filepath=Path(sa_dir_path, "fews-NA-202102-125264-patch.jar")
-    )
-    logger.info("Downloading sa_global.properties...Temporarily to Config dir.")
-    s3_download_file(
-        remote_filepath=f"{rfc}/sa_global.properties",
-        local_filepath=Path(sa_dir_path, "Config", "sa_global.properties")
-    )
     # 5. Create FEWS desktop shortcut that calls the shell script
     desktop_shortcut_filepath = Path(
         Path.home(),
