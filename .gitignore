@@ -1,3 +1,20 @@
+# Mounted docker volumes
+.user_home/
+
+# Container Image Packages when wget is too slow
+libs/*.rpm
+
+# Environment files with credentials
+.env
+*.env
+!.env.example
+
+# AWS credentials (backup protection)
+.aws/
+credentials
+config
+.vscode
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -160,5 +177,3 @@ cython_debug/
 #  and can be added to the global gitignore or merged into this file.  For a more nuclear
 #  option (not recommended) you can uncomment the following to ignore the entire idea folder.
 #.idea/
-
-.env/

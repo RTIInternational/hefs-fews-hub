@@ -1,6 +1,0 @@
-[Desktop Entry]
-Name=HEFS-FEWS Dashboard
-Type=Application
-Exec=/opt/hefs_fews_dashboard/start_dashboard.sh
-Terminal=false
-Icon=/opt/hefs_fews_dashboard/dashboard_icon2.png

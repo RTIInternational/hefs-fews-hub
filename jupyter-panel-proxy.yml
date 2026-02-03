@@ -1,0 +1,7 @@
+# jupyter-panel-proxy.yml
+apps:
+  - src/hefs_fews_hub/panel_dashboard.py
+  - src/hefs_fews_hub/panel_helloworld.py
+warm: true
+dev: true
+log_level: debug

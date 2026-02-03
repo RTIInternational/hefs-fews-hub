@@ -1,0 +1,26 @@
+services:
+  hefs-hub:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: hefs-hub:latest
+    container_name: hefs-jupyterlab
+    ports:
+      - "8888:8888"  # JupyterLab
+    env_file:
+      - .env  # Load AWS credentials from .env file (create from .env.example)
+    command: >
+      jupyter lab --ip=0.0.0.0 --port=8888 --no-browser 
+      --NotebookApp.token='' --NotebookApp.password=''
+      --allow-root
+    networks:
+      - hefs-network
+    restart: unless-stopped
+    volumes:
+      - ./.user_home:/home/jovyan
+volumes:
+  .user_home:
+  
+networks:
+  hefs-network:
+    driver: bridge

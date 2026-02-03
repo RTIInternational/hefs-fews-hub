@@ -1,5 +1,0 @@
-# jupyter-panel-proxy.yml
-apps:
-  - /opt/hefs_fews_dashboard/panel_dashboard.py
-command: panel serve /opt/hefs_fews_dashboard/panel_dashboard.py --port 8888 --allow-websocket-origin="*"
-absolute-url: True
