@@ -14,6 +14,22 @@ from ipyleaflet import Map, GeoJSON
 FORMAT = "%(asctime)s | %(levelname)s | %(name)s | %(message)s"
 
 
+class PanelLogHandler(logging.Handler):
+    """Custom logging handler that writes to a Panel TextAreaInput widget."""
+    
+    def __init__(self, text_widget):
+        super().__init__()
+        self.text_widget = text_widget
+        
+    def emit(self, record):
+        """Append log message to the text widget."""
+        try:
+            msg = self.format(record)
+            self.text_widget.value += msg + "\n"
+        except Exception:
+            self.handleError(record)
+
+
 @pn.cache
 def reconfig_basic_config(format_=FORMAT, level=logging.INFO):
     """(Re-)configure logging"""
@@ -83,29 +99,15 @@ def get_marker_and_map():
     lmap.layout.width = "100%"
     return lmap
 
-
-# def download_historical_data(event) -> None:
-#     """Download historical data for selected RFC."""
-#     fews_download_dir = Path(download_dir_text.value)
-#     if not fews_download_dir.exists():
-#         raise ValueError(
-#             f"The directory: {fews_download_dir}, "
-#             "does not exist. Please create it first!"
-#         )
-
-#     logger.info(f"Downloading historical data to {fews_download_dir.as_posix()}...")
-#     s3_download_directory_cli(
-#         prefix=f"{rfc_selector.value}/historicalData",
-#         local=Path(fews_download_dir, f"{rfc_selector.value}/cardfiles").as_posix(),
-#     )
-#     logger.info("Data download complete.")
-
-
 def install_fews_standalone_pf(event) -> None:
     """Download standalone configuration from S3 to the working directory."""
     turn_on_indeterminate()
-    install_fews_standalone(download_dir_text.value, rfc_selector.value)
-    turn_off_indeterminate()
+    try:
+        install_fews_standalone(download_dir_text.value, rfc_selector.value)
+    except Exception as e:
+        logger.error(f"Error installing FEWS standalone: {e}")
+    finally:
+        turn_off_indeterminate()
     return
 
 
@@ -137,8 +139,6 @@ download_configs_button = pn.widgets.Button(
 )
 download_configs_button.on_click(install_fews_standalone_pf)
 
-# download_data_button = pn.widgets.Button(name="Download Data", button_type="primary")
-# download_data_button.on_click(download_historical_data)
 
 indeterminate = pn.indicators.Progress(
     name="Indeterminate Progress",
@@ -147,8 +147,31 @@ indeterminate = pn.indicators.Progress(
     styles={"height": "15px"},
 )
 
+# Log display widget
+log_display = pn.widgets.TextAreaInput(
+    name="Log Output",
+    value="",
+    placeholder="Log messages will appear here...",
+    disabled=True,
+    height=200,
+    sizing_mode="stretch_width",
+)
+
+# Collapsible card for log display
+log_card = pn.Card(
+    log_display,
+    title="Logs & Messages",
+    collapsed=True,
+    collapsible=True,
+    sizing_mode="stretch_width",
+)
+
+# Add the custom handler to the logger
+panel_handler = PanelLogHandler(log_display)
+panel_handler.setFormatter(logging.Formatter(FORMAT))
+logger.addHandler(panel_handler)
+
 # LAYOUT
-# download_row = pn.Row(rfc_selector, download_configs_button, download_data_button)
 download_row = pn.Row(rfc_selector, download_configs_button)
 
 column = pn.Column(
@@ -156,6 +179,7 @@ column = pn.Column(
     download_row,
     pn.Row(download_dir_text),
     pn.Row(indeterminate),
+    log_card,
 )
 
 logo_path = Path(__file__).parent / "images" / "CIROHLogo_200x200.png"

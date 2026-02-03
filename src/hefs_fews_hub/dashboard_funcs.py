@@ -6,6 +6,7 @@ import shutil
 from typing import Union, List
 from concurrent import futures
 import subprocess
+import threading
 import logging
 
 logger = logging.getLogger("HEFS-Dashboard")
@@ -47,8 +48,6 @@ def create_start_standalone_command(
         configuration_dir: Union[str, Path]
 ) -> str:
     """Create a shell alias for running FEWS."""
-    # configuration_dir = /home/jovyan/fews/configurations/abrfc_sa_arcful
-    # fews_binaries_dir = /opt/fews
     bash_command = f"{fews_root_dir}/linux/jre/bin/java " \
         f"-Dregion.home={configuration_dir} " \
         f"-Xmx100m -splash:{fews_root_dir}/fews-splash.jpg " \
@@ -102,17 +101,60 @@ def s3_download_file(remote_filepath: str, local_filepath: str) -> None:
 
 def s3_download_directory_cli(prefix, local, bucket=BUCKET_NAME):
     """Download a directory from an S3 bucket using AWS CLI."""
-    subprocess.run(
-            [
-                "aws",
-                "s3",
-                "cp",
-                f"s3://{bucket}/HEFS_FEWS/{prefix}",
-                local,
-                "--recursive",
-                "--only-show-errors"
-            ],
-        )
+    
+    def stream_output(pipe, log_func):
+        """Read lines from pipe and log them."""
+        for line in iter(pipe.readline, ''):
+            line = line.rstrip()
+            if log_func == logger.error and line:
+                log_func(line)
+            elif line: # and line.startswith("download:"):
+                log_func(line)
+        pipe.close()
+    
+    process = subprocess.Popen(
+        [
+            "aws",
+            "s3",
+            "cp",
+            f"s3://{bucket}/HEFS_FEWS/{prefix}",
+            local,
+            "--recursive",
+            "--only-show-errors", # TODO: Consider removing this flag and filter output
+            # in the stream_output function based on content.
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    )
+    
+    # Create threads to continuously log stdout and stderr
+    stdout_thread = threading.Thread(
+        target=stream_output,
+        args=(process.stdout, logger.debug)
+    )
+    stderr_thread = threading.Thread(
+        target=stream_output,
+        args=(process.stderr, logger.info)
+    )
+    
+    # Start logging threads
+    stdout_thread.start()
+    stderr_thread.start()
+    
+    # Wait for process to complete
+    return_code = process.wait()
+    
+    # Wait for logging threads to finish
+    stdout_thread.join()
+    stderr_thread.join()
+    
+    if return_code != 0:
+        logger.error(f"AWS S3 download failed with return code {return_code}")
+    else:
+        logger.info("AWS S3 download completed successfully")
+    
     return
 
 
@@ -168,7 +210,7 @@ def install_fews_standalone(download_dir: str, rfc: str) -> None:
         raise ValueError(f"The directory: {fews_download_dir}, does not exist. Please create it first!")
 
     # 1. Download sa from S3
-    logger.info(f"Downloading {rfc} configuration to {fews_download_dir.as_posix()}...This will take a few minutes...")
+    logger.info(f"Downloading {rfc} Fews RegionHome to {fews_download_dir.as_posix()}...This will take a few minutes...")
     s3_download_directory_cli(
         prefix=f"{rfc}",
         local=Path(fews_download_dir, f"{rfc}").as_posix(),
@@ -185,7 +227,7 @@ def install_fews_standalone(download_dir: str, rfc: str) -> None:
     shell_script_filepath = Path(sa_dir_path, "start_fews_standalone.sh")
     write_shell_file(shell_script_filepath, bash_command_str)
 
-    # 5. Create FEWS desktop shortcut that calls the shell script
+    # 4. Create FEWS desktop shortcut that calls the shell script
     desktop_shortcut_filepath = Path(
         Path.home(),
         "Desktop",

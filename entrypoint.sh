@@ -45,5 +45,12 @@ cat > /home/jovyan/.config/autostart/xfce-polkit.desktop <<EOF
 Hidden=true
 EOF
 
+# Ensure Desktop directory exists
+if [ ! -d "/home/jovyan/Desktop" ]; then
+    echo "Creating Desktop directory..."
+    mkdir -p /home/jovyan/Desktop
+    chown jovyan:100 /home/jovyan/Desktop
+fi
+
 # Execute the main command
 exec "$@"
