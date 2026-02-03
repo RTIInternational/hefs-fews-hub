@@ -84,21 +84,21 @@ def get_marker_and_map():
     return lmap
 
 
-def download_historical_data(event) -> None:
-    """Download historical data for selected RFC."""
-    fews_download_dir = Path(download_dir_text.value)
-    if not fews_download_dir.exists():
-        raise ValueError(
-            f"The directory: {fews_download_dir}, "
-            "does not exist. Please create it first!"
-        )
+# def download_historical_data(event) -> None:
+#     """Download historical data for selected RFC."""
+#     fews_download_dir = Path(download_dir_text.value)
+#     if not fews_download_dir.exists():
+#         raise ValueError(
+#             f"The directory: {fews_download_dir}, "
+#             "does not exist. Please create it first!"
+#         )
 
-    logger.info(f"Downloading historical data to {fews_download_dir.as_posix()}...")
-    s3_download_directory_cli(
-        prefix=f"{rfc_selector.value}/historicalData",
-        local=Path(fews_download_dir, f"{rfc_selector.value}/cardfiles").as_posix(),
-    )
-    logger.info("Data download complete.")
+#     logger.info(f"Downloading historical data to {fews_download_dir.as_posix()}...")
+#     s3_download_directory_cli(
+#         prefix=f"{rfc_selector.value}/historicalData",
+#         local=Path(fews_download_dir, f"{rfc_selector.value}/cardfiles").as_posix(),
+#     )
+#     logger.info("Data download complete.")
 
 
 def install_fews_standalone_pf(event) -> None:
@@ -137,8 +137,8 @@ download_configs_button = pn.widgets.Button(
 )
 download_configs_button.on_click(install_fews_standalone_pf)
 
-download_data_button = pn.widgets.Button(name="Download Data", button_type="primary")
-download_data_button.on_click(download_historical_data)
+# download_data_button = pn.widgets.Button(name="Download Data", button_type="primary")
+# download_data_button.on_click(download_historical_data)
 
 indeterminate = pn.indicators.Progress(
     name="Indeterminate Progress",
@@ -148,7 +148,8 @@ indeterminate = pn.indicators.Progress(
 )
 
 # LAYOUT
-download_row = pn.Row(rfc_selector, download_configs_button, download_data_button)
+# download_row = pn.Row(rfc_selector, download_configs_button, download_data_button)
+download_row = pn.Row(rfc_selector, download_configs_button)
 
 column = pn.Column(
     IPyWidget(lmap, sizing_mode="stretch_both", min_height=500),
