@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "hefs-fews-hub"
-version = "0.1.0"
+version = "0.2.0"
 description = ""
 authors = ["Sam Lamont <slamont@rit.org>", "Florian Kluibenschaedl <fkluibenschaedl@rti.org>"]
 license = "MIT"
