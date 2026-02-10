@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: hefs-hub:latest
+    image: hefs-hub:v2
     container_name: hefs-jupyterlab
     ports:
       - "8888:8888"  # JupyterLab
