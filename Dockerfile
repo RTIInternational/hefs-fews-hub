@@ -127,9 +127,9 @@ RUN ${NB_PYTHON_PREFIX}/bin/pip install hefs_fews_hub-0.1.0-py3-none-any.whl \
 # TurboVNC (https://github.com/TurboVNC/turbovnc)
 # ===========================================================
 ARG TURBOVNC_VERSION=3.1
-COPY libs/turbovnc-3.1.x86_64.rpm turbovnc.rpm
-RUN echo "installing TurboVNC..." \
-# RUN wget -q "https://sourceforge.net/projects/turbovnc/files/${TURBOVNC_VERSION}/turbovnc-${TURBOVNC_VERSION}.x86_64.rpm/download" -O turbovnc.rpm \
+# COPY libs/turbovnc-3.1.x86_64.rpm turbovnc.rpm
+RUN echo "installing TurboVNC..."
+RUN wget -q "https://sourceforge.net/projects/turbovnc/files/${TURBOVNC_VERSION}/turbovnc-${TURBOVNC_VERSION}.x86_64.rpm/download" -O turbovnc.rpm \
     && dnf install -y turbovnc.rpm \
     && rm turbovnc.rpm \
     && ln -s /opt/TurboVNC/bin/* /usr/local/bin/
