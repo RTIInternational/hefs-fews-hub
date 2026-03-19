@@ -32,6 +32,7 @@ RUN --mount=type=cache,target=/var/cache/dnf \
 # Install XFCE components individually to save space
 RUN --mount=type=cache,target=/var/cache/dnf \
     dnf install -y --enablerepo=epel \
+    dpkg \
     dbus-x11 \
     xfce4-session \
     xfce4-panel \
@@ -54,6 +55,13 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     unzip && \
     dnf clean all
 
+    
+RUN wget https://repo.almalinux.org/almalinux/8/AppStream/x86_64/os/Packages/compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm &&\
+    dpkg --add-architecture i386 && \
+    dnf -y install compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm \
+    libstdc++.i686 \
+    glibc.i686
+    
 ENV CONDA_ENV=notebook \
     NB_USER=jovyan \
     NB_UID=1000 \
@@ -117,11 +125,11 @@ ENV NB_PYTHON_PREFIX=${CONDA_DIR}/envs/${CONDA_ENV}
 ENV PATH=${NB_PYTHON_PREFIX}/bin:${PATH}
 
 # Panel Application setup
-COPY dist/hefs_fews_hub-0.1.0-py3-none-any.whl hefs_fews_hub-0.1.0-py3-none-any.whl
+COPY dist/hefs_fews_hub-0.3.1-py3-none-any.whl hefs_fews_hub-0.3.1-py3-none-any.whl
 # Install HEFS FEWS Hub with TEEHR dependency
 # RUN --mount=type=cache,target=/root/.cache/pip \
-RUN ${NB_PYTHON_PREFIX}/bin/pip install hefs_fews_hub-0.1.0-py3-none-any.whl \
-    && rm hefs_fews_hub-0.1.0-py3-none-any.whl
+RUN ${NB_PYTHON_PREFIX}/bin/pip install hefs_fews_hub-0.3.1-py3-none-any.whl \
+    && rm hefs_fews_hub-0.3.1-py3-none-any.whl
 
 # ===========================================================
 # TurboVNC (https://github.com/TurboVNC/turbovnc)
