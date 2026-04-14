@@ -74,6 +74,9 @@ An AWS s3 bucket was created: `ciroh-rti-hefs-data`. Read permissions are public
 
 ### Using Docker Compose (recommended)
 
+The docker image requires an application python package (i.e. `hefs_fews_hub`). See dockerfile L128. To produce a new version, update the version tag in `pyproject.toml` (or use `poetry version major|mino|patch` as needed) and run the `poetry build --format wheel` command
+
+
 ```bash
 # Build and start JupyterLab with integrated remote desktop (run as background process with -d)
 docker compose up --build -d
