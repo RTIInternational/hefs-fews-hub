@@ -55,7 +55,7 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     unzip && \
     dnf clean all
 
-    
+# specific for FEWS. These are the key packages for the 32-bit modules. 
 RUN wget https://repo.almalinux.org/almalinux/8/AppStream/x86_64/os/Packages/compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm &&\
     dpkg --add-architecture i386 && \
     dnf -y install compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm \
@@ -195,6 +195,40 @@ RUN mkdir -p /opt/fews \
 RUN curl -sL https://rpm.nodesource.com/setup_20.x | bash - \
     && dnf install -y nodejs \
     && npm install -g npm@7.24.0
+
+# ===========================================================
+# NGEN Build Dependencies
+# ===========================================================
+# Install all packages required to compile NGEN, its BMI modules,
+# and optionally the Fortran modules (Noah-OWP, SAC-SMA, Snow-17)
+# and the t-route Python routing packages.
+# The actual NGEN source build is NOT done here — it is performed
+# manually inside the running container by running install_ngen.sh.
+#
+# PowerTools (crb) is already enabled earlier for EPEL; re-enable here
+# in case this layer is built independently.
+RUN --mount=type=cache,target=/var/cache/dnf \
+    dnf install -y epel-release && \
+    (dnf config-manager --set-enabled powertools 2>/dev/null || \
+     dnf config-manager --set-enabled crb 2>/dev/null || true) && \
+    dnf install -y \
+      gcc gcc-c++ gcc-gfortran make cmake git \
+      boost-devel \
+      netcdf-devel netcdf-fortran-devel hdf5-devel \
+      mpich-devel \
+      udunits2-devel expat-devel \
+      openblas-devel sqlite-devel zlib-devel \
+      python3-devel python3-pip \
+      flex bison && \
+    dnf clean all
+
+# Create the default NGEN install root, writable by jovyan so the
+# runtime install never requires sudo.
+RUN mkdir -p /opt/ngen && chown ${NB_UID}:${NB_GID} /opt/ngen
+
+# Copy NGEN installer script and make it executable from anywhere in PATH
+COPY scripts/install_ngen.sh /usr/local/bin/install_ngen.sh
+RUN chmod +x /usr/local/bin/install_ngen.sh
 
 # Copy entrypoint script for AWS configuration
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh

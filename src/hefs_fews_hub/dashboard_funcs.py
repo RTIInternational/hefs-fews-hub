@@ -13,7 +13,21 @@ logger = logging.getLogger("HEFS-Dashboard")
 
 with contextlib.suppress(ImportError):
     import s3fs
-    s3 = s3fs.S3FileSystem(anon=False)
+
+
+def _has_aws_credentials() -> bool:
+    """Return True when AWS credentials are provided via environment variables."""
+    return bool(os.getenv("AWS_ACCESS_KEY_ID") and os.getenv("AWS_SECRET_ACCESS_KEY"))
+
+
+def _get_s3_client():
+    """Create an s3fs client that supports anonymous reads when creds are absent."""
+    try:
+        import s3fs
+    except ImportError as exc:
+        raise ImportError("s3fs is required for S3 operations") from exc
+
+    return s3fs.S3FileSystem(anon=not _has_aws_credentials())
 
 BUCKET_NAME = "ciroh-rti-hefs-data"
 FEWS_INSTALL_DIR = Path("/opt", "fews")
@@ -95,12 +109,25 @@ def s3_download_file(remote_filepath: str, local_filepath: str) -> None:
     """Download a file from an S3 bucket."""
     Path(local_filepath).parent.mkdir(exist_ok=True, parents=True)
     s3_path = f"{BUCKET_NAME}/{remote_filepath}"
+    s3 = _get_s3_client()
     s3.get(s3_path, local_filepath)
     return
 
 
 def s3_download_directory_cli(prefix, local, bucket=BUCKET_NAME):
     """Download a directory from an S3 bucket using AWS CLI."""
+    aws_command = [
+        "aws",
+        "s3",
+        "cp",
+        f"s3://{bucket}/HEFS_FEWS/{prefix}",
+        local,
+        "--recursive",
+        "--only-show-errors",
+    ]
+
+    if not _has_aws_credentials():
+        aws_command.append("--no-sign-request")
     
     def stream_output(pipe, log_func):
         """Read lines from pipe and log them."""
@@ -113,16 +140,7 @@ def s3_download_directory_cli(prefix, local, bucket=BUCKET_NAME):
         pipe.close()
     
     process = subprocess.Popen(
-        [
-            "aws",
-            "s3",
-            "cp",
-            f"s3://{bucket}/HEFS_FEWS/{prefix}",
-            local,
-            "--recursive",
-            "--only-show-errors", # TODO: Consider removing this flag and filter output
-            # in the stream_output function based on content.
-        ],
+        aws_command,
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE,
         text=True,
@@ -160,6 +178,7 @@ def s3_download_directory_cli(prefix, local, bucket=BUCKET_NAME):
 
 def s3_download_directory(prefix, local, bucket=BUCKET_NAME):
     """Download a directory from an S3 bucket using s3fs."""
+    s3 = _get_s3_client()
     # Ensure local directory exists
     Path(local).mkdir(exist_ok=True, parents=True)
     
@@ -195,6 +214,7 @@ def s3_download_directory(prefix, local, bucket=BUCKET_NAME):
 
 def s3_list_contents(prefix: str) -> List[str]:
     """List the contents of an S3 bucket."""
+    s3 = _get_s3_client()
     s3_path = f"{BUCKET_NAME}/{prefix}"
     files = s3.ls(s3_path, detail=False)
     # Remove bucket name from paths to match original behavior

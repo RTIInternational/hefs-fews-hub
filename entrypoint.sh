@@ -36,6 +36,12 @@ EOF
 else
     echo "No AWS credentials provided. Skipping AWS CLI configuration."
     echo "To configure AWS authentication in the container, provide AWS_ACCESS_KEY_ID and AWS_SECRET_ACCESS_KEY environment variables."
+
+    # Remove stale persisted credentials from previous runs when mounted home is reused
+    if [ -d "${HOME}/.aws" ]; then
+        echo "Removing stale AWS CLI credentials from ${HOME}/.aws for anonymous access..."
+        rm -rf ${HOME}/.aws
+    fi
 fi
 
 # Disable xfce-polkit autostart if it exists (prevents PolicyKit Agent error)
