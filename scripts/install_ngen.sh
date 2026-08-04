@@ -14,7 +14,7 @@
 #                    default: CIROH-UA/ngen
 #   NGEN_BRANCH    — branch to clone
 #                    default: ngiab
-#   BOOST_VERSION  — Boost version to download locally (SYMFLUENCE pins 1.79.0)
+#   BOOST_VERSION  — Boost version to download locally (1.79.0)
 #                    default: 1.79.0
 #   NCORES         — parallel build jobs
 #                    default: 4
@@ -234,6 +234,33 @@ info "=== Step 5: Configuring and building NGEN ==="
 # Unset MAKEFLAGS/MAKELEVEL to prevent spurious recursive make calls
 unset MAKEFLAGS MAKELEVEL 2>/dev/null || true
 
+# Strip conda paths from linker/library discovery for C/C++ linking.
+# This avoids pulling conda C++ runtimes (e.g., libicuuc) that may require
+# newer GLIBCXX symbols than the system compiler toolchain provides.
+strip_conda_paths() {
+    local input="${1:-}"
+    local output=""
+    local part
+    IFS=':' read -r -a parts <<< "$input"
+    for part in "${parts[@]}"; do
+        [[ -z "$part" ]] && continue
+        [[ "$part" == *"/opt/conda"* ]] && continue
+        output="${output:+$output:}$part"
+    done
+    echo "$output"
+}
+
+BUILD_LD_LIBRARY_PATH="$(strip_conda_paths "${LD_LIBRARY_PATH:-}")"
+BUILD_LIBRARY_PATH="$(strip_conda_paths "${LIBRARY_PATH:-}")"
+BUILD_PKG_CONFIG_PATH="$(strip_conda_paths "${PKG_CONFIG_PATH:-}")"
+
+# Ensure sane defaults if the stripped paths become empty.
+[[ -z "$BUILD_LD_LIBRARY_PATH" ]] && BUILD_LD_LIBRARY_PATH="/usr/lib64:/usr/lib64/mpich/lib"
+[[ -z "$BUILD_LIBRARY_PATH" ]] && BUILD_LIBRARY_PATH="/usr/lib64:/usr/lib64/mpich/lib"
+
+info "Using sanitized linker paths for ngen build"
+info "  LD_LIBRARY_PATH=$BUILD_LD_LIBRARY_PATH"
+
 # Build the CMake argument list
 CMAKE_ARGS=(
     -DCMAKE_BUILD_TYPE=Release
@@ -263,11 +290,22 @@ if [[ "$WITH_PYTHON" == "1" ]]; then
     )
 fi
 
-cmake "${CMAKE_ARGS[@]}" -S . -B cmake_build
-cmake --build cmake_build --target ngen -j "$NCORES"
+if ! env \
+    LD_LIBRARY_PATH="$BUILD_LD_LIBRARY_PATH" \
+    LIBRARY_PATH="$BUILD_LIBRARY_PATH" \
+    PKG_CONFIG_PATH="$BUILD_PKG_CONFIG_PATH" \
+    cmake "${CMAKE_ARGS[@]}" -S . -B cmake_build; then
+    die "CMake configure failed."
+fi
 
-# If the Python-enabled build fails, retry without Python/routing
-if [[ $? -ne 0 && "$WITH_PYTHON" == "1" ]]; then
+if ! env \
+    LD_LIBRARY_PATH="$BUILD_LD_LIBRARY_PATH" \
+    LIBRARY_PATH="$BUILD_LIBRARY_PATH" \
+    PKG_CONFIG_PATH="$BUILD_PKG_CONFIG_PATH" \
+    cmake --build cmake_build --target ngen -j "$NCORES"; then
+
+    # If the Python-enabled build fails, retry without Python/routing
+    if [[ "$WITH_PYTHON" == "1" ]]; then
     warn "CMake build failed with Python enabled — retrying without Python/routing flags."
     CMAKE_ARGS_NOPY=()
     for arg in "${CMAKE_ARGS[@]}"; do
@@ -277,8 +315,22 @@ if [[ $? -ne 0 && "$WITH_PYTHON" == "1" ]]; then
         esac
     done
     CMAKE_ARGS_NOPY+=(-DNGEN_WITH_PYTHON=OFF -DNGEN_WITH_ROUTING=OFF)
-    cmake "${CMAKE_ARGS_NOPY[@]}" -S . -B cmake_build
-    cmake --build cmake_build --target ngen -j "$NCORES"
+    if ! env \
+        LD_LIBRARY_PATH="$BUILD_LD_LIBRARY_PATH" \
+        LIBRARY_PATH="$BUILD_LIBRARY_PATH" \
+        PKG_CONFIG_PATH="$BUILD_PKG_CONFIG_PATH" \
+        cmake "${CMAKE_ARGS_NOPY[@]}" -S . -B cmake_build; then
+        die "CMake configure failed after disabling Python/routing."
+    fi
+
+    env \
+        LD_LIBRARY_PATH="$BUILD_LD_LIBRARY_PATH" \
+        LIBRARY_PATH="$BUILD_LIBRARY_PATH" \
+        PKG_CONFIG_PATH="$BUILD_PKG_CONFIG_PATH" \
+        cmake --build cmake_build --target ngen -j "$NCORES"
+    else
+        die "CMake build failed."
+    fi
 fi
 
 # ---------------------------------------------------------------------------

@@ -115,6 +115,7 @@ RUN echo "Installing Miniforge..." \
 RUN --mount=type=cache,target=/opt/conda/pkgs \
     ${CONDA_DIR}/bin/mamba create -n ${CONDA_ENV} -y python=3.12 \
     && ${CONDA_DIR}/bin/mamba install -n ${CONDA_ENV} -y -c conda-forge \
+    'numpy<2' \
     websockify \
     jupyterlab \
     jupyterhub \
