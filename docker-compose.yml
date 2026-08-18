@@ -3,8 +3,8 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: hefs-hub:0.3.1
-    container_name: hefs-jupyterlab
+    image: test-install:20260818
+    container_name: working-ngen-install
     ports:
       - "8888:8888"  # JupyterLab
     env_file:
@@ -17,7 +17,8 @@ services:
       - hefs-network
     restart: unless-stopped
     volumes:
-      - ./.user_home:/home/jovyan
+      - ./.test_user_home:/home/jovyan
+      - ./test_opt_ngen:/opt/ngen
 volumes:
   .user_home:
   

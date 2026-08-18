@@ -427,7 +427,7 @@ for lib_glob in \
     "extern/iso_c_fortran_bmi/cmake_build/libiso_c_bmi.*" \
     "extern/noah-owp-modular/cmake_build/libsurfacebmi.*" \
     "extern/sac-sma/cmake_build/libsacbmi.*" \
-    "extern/snow17/cmake_build/libsnow17_bmi.*"
+    "extern/snow17/cmake_build/libsnow17bmi.*"
 do
     found=$(ls ${lib_glob} 2>/dev/null | head -1 || true)
     if [[ -n "$found" ]]; then

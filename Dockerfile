@@ -62,7 +62,7 @@ RUN wget https://repo.almalinux.org/almalinux/8/AppStream/x86_64/os/Packages/com
     libstdc++.i686 \
     glibc.i686
     
-ENV CONDA_ENV=notebook \
+ENV CONDA_ENV=nextgen \
     NB_USER=jovyan \
     NB_UID=1000 \
     NB_GID=100 \
