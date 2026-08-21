@@ -44,6 +44,7 @@ NCORES="${NCORES:-4}"
 WITH_FORTRAN="${WITH_FORTRAN:-1}"
 WITH_PYTHON="${WITH_PYTHON:-1}"
 PYTHON_EXE="${PYTHON_EXE:-python3}"
+#PYTHON_EXE="/opt/.venv/bin/python3.11"
 
 # Derived
 BOOST_UNDERSCORE="${BOOST_VERSION//./_}"   # e.g. 1_79_0
@@ -255,8 +256,8 @@ BUILD_LIBRARY_PATH="$(strip_conda_paths "${LIBRARY_PATH:-}")"
 BUILD_PKG_CONFIG_PATH="$(strip_conda_paths "${PKG_CONFIG_PATH:-}")"
 
 # Ensure sane defaults if the stripped paths become empty.
-[[ -z "$BUILD_LD_LIBRARY_PATH" ]] && BUILD_LD_LIBRARY_PATH="/usr/lib64:/usr/lib64/mpich/lib"
-[[ -z "$BUILD_LIBRARY_PATH" ]] && BUILD_LIBRARY_PATH="/usr/lib64:/usr/lib64/mpich/lib"
+[[ -z "$BUILD_LD_LIBRARY_PATH" ]] && BUILD_LD_LIBRARY_PATH="/usr/lib64:/usr/lib64/gfortran/modules:/usr/lib64/mpich/lib"
+[[ -z "$BUILD_LIBRARY_PATH" ]] && BUILD_LIBRARY_PATH="/usr/lib64:/usr/lib64/gfortran/modules:/usr/lib64/mpich/lib"
 
 info "Using sanitized linker paths for ngen build"
 info "  LD_LIBRARY_PATH=$BUILD_LD_LIBRARY_PATH"
@@ -387,10 +388,10 @@ fi
 info "=== Step 7: Installing t-route Python routing packages ==="
 
 if [[ "$WITH_PYTHON" == "1" && -d extern/t-route/src ]]; then
-    "$PYTHON_EXE" -m pip install -e extern/t-route/src/python_routing_v02  || warn "t-route python_routing_v02 install failed."
-    "$PYTHON_EXE" -m pip install -e extern/t-route/src/python_framework_v02 || warn "t-route python_framework_v02 install failed."
-    "$PYTHON_EXE" -m pip install -e extern/t-route/src/nwm_routing          || warn "t-route nwm_routing install failed."
-    "$PYTHON_EXE" -m pip install -e extern/t-route/src/ngen_routing --no-deps || warn "t-route ngen_routing install failed."
+    #"$PYTHON_EXE" -m pip install --no-build-isolation -e extern/t-route/src/python_routing_v02  || warn "t-route python_routing_v02 install failed."
+    #"$PYTHON_EXE" -m pip install --no-build-isolation -e extern/t-route/src/python_framework_v02 || warn "t-route python_framework_v02 install failed."
+    "$PYTHON_EXE" -m pip install --no-build-isolation -e extern/t-route/src/nwm_routing          || warn "t-route nwm_routing install failed."
+    "$PYTHON_EXE" -m pip install --no-build-isolation -e extern/t-route/src/ngen_routing --no-deps || warn "t-route ngen_routing install failed."
 else
     info "  Skipping t-route (Python disabled or extern/t-route/src not present)."
 fi

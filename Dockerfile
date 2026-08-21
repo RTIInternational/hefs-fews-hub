@@ -114,8 +114,15 @@ RUN echo "Installing Miniforge..." \
 # Create environment and install packages
 RUN --mount=type=cache,target=/opt/conda/pkgs \
     ${CONDA_DIR}/bin/mamba create -n ${CONDA_ENV} -y python=3.12 \
+    gcc_linux-64 \
+    gxx_linux-64 \
+    libstdcxx-ng \
+    libgcc-ng \
     && ${CONDA_DIR}/bin/mamba install -n ${CONDA_ENV} -y -c conda-forge \
     'numpy<2' \
+    netcdf4 \
+    udunits2 \
+    cython \
     websockify \
     jupyterlab \
     jupyterhub \
@@ -216,11 +223,12 @@ RUN --mount=type=cache,target=/var/cache/dnf \
       gcc gcc-c++ gcc-gfortran make cmake git \
       boost-devel \
       netcdf-devel netcdf-fortran-devel hdf5-devel \
+      #netcdf-devel netcdf-fortran-devel netcdf-cxx-devel netcdf-cxx4-mpich-devel hdf5-devel \
       mpich-devel \
       udunits2-devel expat-devel \
       openblas-devel sqlite-devel zlib-devel \
       python3-devel python3-pip \
-      flex bison && \
+      flex bison which&& \
     dnf clean all
 
 # Create the default NGEN install root, writable by jovyan so the
@@ -229,7 +237,7 @@ RUN mkdir -p /opt/ngen && chown ${NB_UID}:${NB_GID} /opt/ngen
 
 # Copy NGEN installer script and make it executable from anywhere in PATH
 COPY scripts/install_ngen.sh /usr/local/bin/install_ngen.sh
-RUN chmod +x /usr/local/bin/install_ngen.sh
+RUN chmod ugo+wx /usr/local/bin/install_ngen.sh
 
 # Copy entrypoint script for AWS configuration
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
