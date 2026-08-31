@@ -15,10 +15,19 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     dnf install -y epel-release && \
     dnf config-manager --set-enabled powertools && \
     dnf install -y \
-    vim libgfortran sqlite \
-    bzip2 expat udunits2 zlib \
+    dpkg dbus-x11 xfce4-session xfce4-panel xfce4-settings xfdesktop xfwm4 xfce4-terminal \
+    featherpad nano Thunar xorg-x11-server-Xorg xorg-x11-xinit xorg-x11-xauth xorg-x11-fonts-* \
+    xorg-x11-utils curl wget git-lfs perl unzip \
+    vim libgfortran sqlite bzip2 expat udunits2 zlib \
     mpich hdf5 netcdf netcdf-fortran netcdf-cxx netcdf-cxx4-mpich \
-    openblas python3.11
+    openblas python3.11 python3.11-devel python3.11-pip which
+
+RUN python3.11 -m pip install "numpy<2.0"
+
+RUN wget https://repo.almalinux.org/almalinux/8/AppStream/x86_64/os/Packages/compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm && \
+    dpkg --add-architecture i386 && \
+    dnf -y install compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm libstdc++.i686 glibc.i686 && \
+    rm compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 ENV UV_INSTALL_DIR=/root/.cargo/bin
@@ -33,7 +42,6 @@ FROM base AS build_base
 RUN --mount=type=cache,target=/var/cache/dnf \
     dnf install -y \
     sudo gcc gcc-c++ make cmake tar git gcc-gfortran sqlite-devel \
-    python3.11-devel python3.11-pip \
     expat-devel flex bison udunits2-devel zlib-devel \
     wget mpich-devel hdf5-devel netcdf-devel \
     netcdf-fortran-devel netcdf-cxx-devel lld clang \
@@ -42,7 +50,6 @@ RUN --mount=type=cache,target=/var/cache/dnf \
 RUN wget -q https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-linux.zip && \
     unzip ninja-linux.zip -d /usr/local/bin && \
     rm ninja-linux.zip
-RUN python3.11 -m pip install "numpy<2.0"
 # Use GCC 13 gfortran to fix preprocessor apostrophe-in-comment bug in gfortran 8.x #???
 ENV PATH="/opt/rh/gcc-toolset-13/root/usr/bin:${PATH}" 
 
@@ -52,7 +59,8 @@ ENV PATH="/opt/rh/gcc-toolset-13/root/usr/bin:${PATH}"
 FROM build_base AS boost_build
 RUN wget https://archives.boost.io/release/1.86.0/source/boost_1_86_0.tar.gz && \
     tar -xzf boost_1_86_0.tar.gz && \
-    cd boost_1_86_0 && ./bootstrap.sh && ./b2 headers
+    cd boost_1_86_0 && ./bootstrap.sh && ./b2 -j"$(nproc)" install
+    # cd boost_1_86_0 && ./bootstrap.sh && ./b2 headers
 ENV BOOST_ROOT=/boost_1_86_0
 
 FROM boost_build AS troute_prebuild
@@ -61,8 +69,11 @@ ENV FC=gfortran NETCDF=/usr/lib64/gfortran/modules/
 RUN ln -s /usr/bin/python3.11 /usr/bin/python || true
 RUN uv venv -p 3.11
 ENV PATH="/ngen/.venv/bin:$PATH"
-ADD https://api.github.com/repos/${TROUTE_REPO}/git/refs/heads/${TROUTE_BRANCH} /tmp/version.json
+ADD https://api.github.com/repos/${TROUTE_REPO}/git/refs/heads/${TROUTE_BRANCH} /tmp/version.json 
+#curl https://api.github.com/repos/${TROUTE_REPO}/git/refs/heads/${TROUTE_BRANCH} > /tmp/version.json
 RUN uv pip install -r https://raw.githubusercontent.com/$TROUTE_REPO/refs/heads/$TROUTE_BRANCH/requirements.txt
+
+
 
 FROM troute_prebuild AS troute_build
 WORKDIR /ngen/t-route
@@ -82,6 +93,7 @@ RUN git clone --depth 1 --single-branch --branch $TROUTE_BRANCH https://github.c
 FROM boost_build AS ngen_clone
 WORKDIR /ngen
 ADD https://api.github.com/repos/${NGEN_REPO}/git/refs/heads/${NGEN_BRANCH} /tmp/version.json
+#curl https://api.github.com/repos/${NGEN_REPO}/git/refs/heads/${NGEN_BRANCH} > /tmp/version.json
 RUN git clone --single-branch --branch $NGEN_BRANCH https://github.com/$NGEN_REPO.git && \
     cd ngen && \
     git submodule update --init --recursive --depth 1
@@ -146,28 +158,10 @@ COPY --from=build_snow17 /ngen/ngen/extern/snow17/cmake_build/*.so /dmod/shared_
 # ===========================================================
 # STAGE 5: Final Target (Unchanged HEFS-FEWS-Hub + NGEN Copies)
 # ===========================================================
-FROM almalinux:8.10 AS final
+FROM build_base AS final
 USER root
 
-# HEFS-FEWS-Hub OS Dependencies
-RUN --mount=type=cache,id=final-dnf,target=/var/cache/dnf \
-    dnf install epel-release -y && \
-    dnf config-manager --set-enabled powertools
-
-    # add udunits in here?
-RUN --mount=type=cache,id=final-dnf,target=/var/cache/dnf \
-    dnf install -y --enablerepo=epel \
-    dpkg dbus-x11 xfce4-session xfce4-panel xfce4-settings xfdesktop xfwm4 xfce4-terminal \
-    featherpad nano Thunar xorg-x11-server-Xorg xorg-x11-xinit xorg-x11-xauth xorg-x11-fonts-* \
-    xorg-x11-utils curl wget git-lfs perl unzip mpich hdf5 netcdf netcdf-fortran netcdf-cxx netcdf-cxx4-mpich \
-    python3.11-devel python3.11-pip udunits2
-RUN dnf clean all
-RUN python3.11 -m pip install "numpy<2.0"
-
-RUN wget https://repo.almalinux.org/almalinux/8/AppStream/x86_64/os/Packages/compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm && \
-    dpkg --add-architecture i386 && \
-    dnf -y install compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm libstdc++.i686 glibc.i686 && \
-    rm compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm
+RUN python3.11 -m pip install -r https://raw.githubusercontent.com/$TROUTE_REPO/refs/heads/$TROUTE_BRANCH/requirements.txt
 
 ENV CONDA_ENV=notebook \
     NB_USER=jovyan \
@@ -246,6 +240,10 @@ RUN ln -s /dmod/bin/ngen /usr/local/bin/ngen && \
     echo "/dmod/shared_libs/" >> /etc/ld.so.conf.d/ngen.conf && \
     echo "/sundials/lib64" >> /etc/ld.so.conf.d/sundials.conf && \
     ldconfig -v
+
+    # install t-route wheels
+COPY --from=troute_build /wheels/*.whl /tmp/
+RUN python3.11 -m pip install /tmp/*.whl && rm /tmp/*.whl
 
 ENV PATH=$PATH:/usr/lib64/mpich/bin
 
