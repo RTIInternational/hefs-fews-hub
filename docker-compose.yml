@@ -3,7 +3,7 @@ services:
     build:
       context: .
       dockerfile: Dockerfile
-    image: hefs-hub:0.3.1
+    image: hefs-fews-ngen:latest
     container_name: hefs-jupyterlab
     ports:
       - "8888:8888"  # JupyterLab
@@ -17,7 +17,7 @@ services:
       - hefs-network
     restart: unless-stopped
     volumes:
-      - ./.user_home:/home/jovyan
+      - ./.user_home_latest:/home/jovyan
 volumes:
   .user_home:
   

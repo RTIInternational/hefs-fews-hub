@@ -163,6 +163,7 @@ USER root
 
 RUN python3.11 -m pip install -r https://raw.githubusercontent.com/$TROUTE_REPO/refs/heads/$TROUTE_BRANCH/requirements.txt
 
+RUN python3.11 -m pip install "numpy<2.0"
 ENV CONDA_ENV=notebook \
     NB_USER=jovyan \
     NB_UID=1000 \
@@ -236,7 +237,8 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 COPY --from=restructure_files /dmod /dmod
 COPY --from=build_sundials /sundials/install/ /sundials
 
-RUN ln -s /dmod/bin/ngen /usr/local/bin/ngen && \
+RUN printf '#!/bin/bash\nunset PYTHONHOME CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_EXE CONDA_SHLVL\nexport PYTHONPATH=/usr/local/lib/python3.11/site-packages:/usr/local/lib64/python3.11/site-packages:/usr/lib64/python3.11/site-packages:/usr/lib/python3.11/site-packages\nexec /dmod/bin/ngen "$@"\n' > /usr/local/bin/ngen && \
+    chmod +x /usr/local/bin/ngen && \
     echo "/dmod/shared_libs/" >> /etc/ld.so.conf.d/ngen.conf && \
     echo "/sundials/lib64" >> /etc/ld.so.conf.d/sundials.conf && \
     ldconfig -v
