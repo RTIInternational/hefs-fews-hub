@@ -8,8 +8,11 @@ USER root
 
 ENV TROUTE_REPO=CIROH-UA/t-route
 ENV TROUTE_BRANCH=ngiab
-ENV NGEN_REPO=CIROH-UA/ngen
-ENV NGEN_BRANCH=ngiab
+# ENV NGEN_REPO=CIROH-UA/ngen
+# ENV NGEN_BRANCH=ngiab
+# replace with ap clone of ngen for now to test.
+ENV NGEN_REPO=apreucil/ngen
+ENV NGEN_BRANCH=fix/feat_id_parse
 
 RUN --mount=type=cache,target=/var/cache/dnf \
     dnf install -y epel-release && \
@@ -83,14 +86,16 @@ RUN git clone --depth 1 --single-branch --branch $TROUTE_BRANCH https://github.c
     sed -i 's/build_[a-z]*=/#&/' compiler.sh && \
     ./compiler.sh no-e && \
     uv pip install --config-setting='--build-option=--use-cython' src/troute-network/ && \
-    uv build --wheel --config-setting='--build-option=--use-cython' src/troute-network/ && \
+    cd src/troute-network && uv build --wheel --config-setting='--build-option=--use-cython' && cd /ngen/t-route && \
     uv pip install --no-build-isolation --config-setting='--build-option=--use-cython' src/troute-routing/ && \
-    uv build --wheel --no-build-isolation --config-setting='--build-option=--use-cython' src/troute-routing/ && \
-    uv build --wheel --no-build-isolation src/troute-config/ && \
-    uv build --wheel --no-build-isolation src/troute-nwm/ && \
-    mkdir /wheels && cp /ngen/t-route/src/troute-*/dist/*.whl /wheels/
+    cd src/troute-routing && uv build --wheel --no-build-isolation --config-setting='--build-option=--use-cython' && cd /ngen/t-route && \
+    cd src/troute-config && uv build --wheel --no-build-isolation && cd /ngen/t-route && \
+    cd src/troute-nwm && uv build --wheel --no-build-isolation && cd /ngen/t-route && \
+    mkdir -p /wheels && find /ngen/t-route/src/troute-*/dist -name "*.whl" -exec cp {} /wheels/ \;
 
 FROM boost_build AS ngen_clone
+# NGIAB docker does it from troute_prebuild, not boost_build. Wondering if this will solve some env issues?
+# FROM troute_prebuild AS ngen_clone
 WORKDIR /ngen
 ADD https://api.github.com/repos/${NGEN_REPO}/git/refs/heads/${NGEN_BRANCH} /tmp/version.json
 #curl https://api.github.com/repos/${NGEN_REPO}/git/refs/heads/${NGEN_BRANCH} > /tmp/version.json
@@ -243,9 +248,16 @@ RUN printf '#!/bin/bash\nunset PYTHONHOME CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_E
     echo "/sundials/lib64" >> /etc/ld.so.conf.d/sundials.conf && \
     ldconfig -v
 
-    # install t-route wheels
+    # install t-route wheels; troute-nwm (ngen_routing) must be installed last and
+    # separately — installing all wheels together against system python silently drops it.
 COPY --from=troute_build /wheels/*.whl /tmp/
-RUN python3.11 -m pip install /tmp/*.whl && rm /tmp/*.whl
+RUN for whl in /tmp/troute_network*.whl /tmp/troute_routing*.whl /tmp/troute_config*.whl; do \
+        [ -f "$whl" ] && python3.11 -m pip install "$whl" || true; \
+    done && \
+    for whl in /tmp/troute_nwm*.whl; do \
+        [ -f "$whl" ] && python3.11 -m pip install --no-build-isolation "$whl" || true; \
+    done && \
+    rm -f /tmp/*.whl
 
 ENV PATH=$PATH:/usr/lib64/mpich/bin
 
