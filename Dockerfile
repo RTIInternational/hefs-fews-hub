@@ -23,7 +23,7 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     xorg-x11-utils curl wget git-lfs perl unzip \
     vim libgfortran sqlite bzip2 expat udunits2 zlib \
     mpich hdf5 netcdf netcdf-fortran netcdf-cxx netcdf-cxx4-mpich \
-    openblas python3.11 python3.11-devel python3.11-pip which
+    openblas python3.11 python3.11-devel python3.11-pip which gdb lldb
 
 RUN python3.11 -m pip install "numpy<2.0"
 
@@ -48,7 +48,7 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     expat-devel flex bison udunits2-devel zlib-devel \
     wget mpich-devel hdf5-devel netcdf-devel \
     netcdf-fortran-devel netcdf-cxx-devel lld clang \
-    openblas-devel unzip gcc-toolset-13-gcc-gfortran
+    openblas-devel unzip gcc-toolset-13-gcc-gfortran gdb
 # AlmaLinux 8 ships ninja 1.8.2; Fortran support requires 1.10+
 RUN wget -q https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-linux.zip && \
     unzip ninja-linux.zip -d /usr/local/bin && \
@@ -80,6 +80,7 @@ RUN uv pip install -r https://raw.githubusercontent.com/$TROUTE_REPO/refs/heads/
 
 FROM troute_prebuild AS troute_build
 WORKDIR /ngen/t-route
+ENV CFLAGS="-g -O0" CXXFLAGS="-g -O0" FFLAGS="-g -O0"
 RUN git clone --depth 1 --single-branch --branch $TROUTE_BRANCH https://github.com/$TROUTE_REPO.git . && \
     git submodule update --init --depth 1 && \
     uv pip install build wheel && \
@@ -93,9 +94,9 @@ RUN git clone --depth 1 --single-branch --branch $TROUTE_BRANCH https://github.c
     cd src/troute-nwm && uv build --wheel --no-build-isolation && cd /ngen/t-route && \
     mkdir -p /wheels && find /ngen/t-route/src/troute-*/dist -name "*.whl" -exec cp {} /wheels/ \;
 
-FROM boost_build AS ngen_clone
+# FROM boost_build AS ngen_clone
 # NGIAB docker does it from troute_prebuild, not boost_build. Wondering if this will solve some env issues?
-# FROM troute_prebuild AS ngen_clone
+FROM troute_prebuild AS ngen_clone
 WORKDIR /ngen
 ADD https://api.github.com/repos/${NGEN_REPO}/git/refs/heads/${NGEN_BRANCH} /tmp/version.json
 #curl https://api.github.com/repos/${NGEN_REPO}/git/refs/heads/${NGEN_BRANCH} > /tmp/version.json
@@ -105,8 +106,9 @@ RUN git clone --single-branch --branch $NGEN_BRANCH https://github.com/$NGEN_REP
 
 FROM ngen_clone AS ngen_build
 ENV PATH=${PATH}:/usr/lib64/mpich/bin
+ENV CXXFLAGS="-fuse-ld=lld -g -O0" CFLAGS="-g -O0" FFLAGS="-g -O0"
 WORKDIR /ngen/ngen
-ARG COMMON_BUILD_ARGS="-DNGEN_WITH_EXTERN_ALL=ON -DNGEN_WITH_NETCDF:BOOL=ON -DNGEN_WITH_BMI_C:BOOL=ON -DNGEN_WITH_BMI_FORTRAN:BOOL=ON -DNGEN_WITH_PYTHON:BOOL=ON -DNGEN_WITH_ROUTING:BOOL=ON -DNGEN_WITH_SQLITE:BOOL=ON -DNGEN_WITH_UDUNITS:BOOL=ON -DUDUNITS_QUIET:BOOL=ON -DNGEN_WITH_TESTS:BOOL=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=. -DCMAKE_CXX_FLAGS='-fuse-ld=lld' -DPython_EXECUTABLE=/usr/bin/python3.11"
+ARG COMMON_BUILD_ARGS="-DNGEN_WITH_EXTERN_ALL=ON -DNGEN_WITH_NETCDF:BOOL=ON -DNGEN_WITH_BMI_C:BOOL=ON -DNGEN_WITH_BMI_FORTRAN:BOOL=ON -DNGEN_WITH_PYTHON:BOOL=ON -DNGEN_WITH_ROUTING:BOOL=ON -DNGEN_WITH_SQLITE:BOOL=ON -DNGEN_WITH_UDUNITS:BOOL=ON -DUDUNITS_QUIET:BOOL=ON -DNGEN_WITH_TESTS:BOOL=OFF -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=. -DPython_EXECUTABLE=/usr/bin/python3.11"
 RUN cmake -G Ninja -B cmake_build_serial -S . ${COMMON_BUILD_ARGS} -DNGEN_WITH_MPI:BOOL=OFF && \
     cmake --build cmake_build_serial --target all -- -j $(nproc)
 
@@ -122,13 +124,13 @@ WORKDIR /sundials
 ENV SUNDIALS_VERSION=7.5.0
 RUN wget https://github.com/LLNL/sundials/releases/download/v${SUNDIALS_VERSION}/sundials-${SUNDIALS_VERSION}.tar.gz && \
     tar -xzf sundials-${SUNDIALS_VERSION}.tar.gz && \
-    cmake -G Ninja -B build_sundials sundials-${SUNDIALS_VERSION} -DEXAMPLES_ENABLE_C=OFF -DEXAMPLES_ENABLE_F2003=OFF -DBUILD_FORTRAN_MODULE_INTERFACE=ON -DCMAKE_Fortran_COMPILER=gfortran -DCMAKE_INSTALL_PREFIX=/sundials/install && \
+    cmake -G Ninja -B build_sundials sundials-${SUNDIALS_VERSION} -DEXAMPLES_ENABLE_C=OFF -DEXAMPLES_ENABLE_F2003=OFF -DBUILD_FORTRAN_MODULE_INTERFACE=ON -DCMAKE_Fortran_COMPILER=gfortran -DCMAKE_BUILD_TYPE=Debug -DCMAKE_INSTALL_PREFIX=/sundials/install && \
     cmake --build build_sundials --target all -- -j $(nproc) && \
     cmake --build build_sundials --target install
 
 FROM build_sundials AS build_summa
 WORKDIR /ngen/ngen/extern/summa
-RUN cmake -G Ninja -B build_summa -DUSE_NEXTGEN=ON -DUSE_SUNDIALS=ON -DSPECIFY_LAPACK_LINKS=OFF -DCMAKE_BUILD_TYPE=Release -DNetCDF_F90_INCLUDE_DIR=/usr/lib64/gfortran/modules/ -DOpenBLAS_INCLUDE_DIR=/usr/include/openblas -DSUNDIALS_DIR=/sundials/build_sundials/ -DCMAKE_Fortran_COMPILER=gfortran && \
+RUN cmake -G Ninja -B build_summa -DUSE_NEXTGEN=ON -DUSE_SUNDIALS=ON -DSPECIFY_LAPACK_LINKS=OFF -DCMAKE_BUILD_TYPE=Debug -DNetCDF_F90_INCLUDE_DIR=/usr/lib64/gfortran/modules/ -DOpenBLAS_INCLUDE_DIR=/usr/include/openblas -DSUNDIALS_DIR=/sundials/build_sundials/ -DCMAKE_Fortran_COMPILER=gfortran -DCMAKE_Fortran_FLAGS="-g -O0" && \
     cmake --build build_summa --target all -- -j $(nproc)
 
 FROM ngen_clone AS build_sacsma
@@ -164,11 +166,19 @@ COPY --from=build_snow17 /ngen/ngen/extern/snow17/cmake_build/*.so /dmod/shared_
 # STAGE 5: Final Target (Unchanged HEFS-FEWS-Hub + NGEN Copies)
 # ===========================================================
 FROM build_base AS final
+ARG pinned_python_packages="netCDF4==1.6.3 pydantic<2 pandas<3"
 USER root
 
-RUN python3.11 -m pip install -r https://raw.githubusercontent.com/$TROUTE_REPO/refs/heads/$TROUTE_BRANCH/requirements.txt
+# RUN --mount=type=cache,target=/var/cache/dnf \
+#     dnf install -y hdf5-devel netcdf-devel netcdf-fortran-devel netcdf-cxx-devel netcdf-cxx4-mpich-devel
 
-RUN python3.11 -m pip install "numpy<2.0"
+# RUN python3.11 -m pip install mpi4py
+
+# RUN HDF5_DIR=/usr NETCDF4_DIR=/usr/lib64/mpich MPICC=mpicc CC=mpicc USE_NCCONFIG=1 \
+#     python3.11 -m pip install --no-cache-dir \
+#     -r https://raw.githubusercontent.com/$TROUTE_REPO/refs/heads/$TROUTE_BRANCH/requirements.txt
+
+# RUN python3.11 -m pip install "numpy<2.0"
 ENV CONDA_ENV=notebook \
     NB_USER=jovyan \
     NB_UID=1000 \
@@ -251,15 +261,28 @@ RUN printf '#!/bin/bash\nunset PYTHONHOME CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_E
     # install t-route wheels; troute-nwm (ngen_routing) must be installed last and
     # separately — installing all wheels together against system python silently drops it.
 COPY --from=troute_build /wheels/*.whl /tmp/
-RUN for whl in /tmp/troute_network*.whl /tmp/troute_routing*.whl /tmp/troute_config*.whl; do \
-        [ -f "$whl" ] && python3.11 -m pip install "$whl" || true; \
-    done && \
-    for whl in /tmp/troute_nwm*.whl; do \
-        [ -f "$whl" ] && python3.11 -m pip install --no-build-isolation "$whl" || true; \
-    done && \
-    rm -f /tmp/*.whl
+# WORKDIR /ngen
+
+RUN python3.11 -m pip install /tmp/*.whl 
+RUN python3.11 -mpip install ${pinned_python_packages}
+
+# RUN for whl in /tmp/troute_network*.whl /tmp/troute_routing*.whl /tmp/troute_config*.whl; do \
+#         [ -f "$whl" ] && python3.11 -m pip install "$whl" || true; \
+#     done && \
+#     for whl in /tmp/nwm_routing*.whl; do \
+#         [ -f "$whl" ] && python3.11 -m pip install --no-build-isolation "$whl" || true; \
+#     done && \
+#     rm -f /tmp/*.whl
+
+# RUN python3.11 -m pip install ${pinned_python_packages} 
+
 
 ENV PATH=$PATH:/usr/lib64/mpich/bin
+
+# trying to resolve numpy issues... not working!!
+RUN python3.11 -m pip install "numpy=1.26.4"
+
+# ENV PATH="/ngen/.venv/bin:${PATH}"
 
 USER ${NB_USER}
 WORKDIR /home/jovyan
