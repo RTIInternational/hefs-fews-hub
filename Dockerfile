@@ -252,7 +252,13 @@ RUN chmod +x /usr/local/bin/entrypoint.sh
 COPY --from=restructure_files /dmod /dmod
 COPY --from=build_sundials /sundials/install/ /sundials
 
-RUN printf '#!/bin/bash\nunset PYTHONHOME CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_EXE CONDA_SHLVL\nexport PYTHONPATH=/usr/local/lib/python3.11/site-packages:/usr/local/lib64/python3.11/site-packages:/usr/lib64/python3.11/site-packages:/usr/lib/python3.11/site-packages\nexec /dmod/bin/ngen "$@"\n' > /usr/local/bin/ngen && \
+# /usr/bin/python3 -> platform-python3.6 (RHEL default) and conda dirs earlier
+# in PATH both shadow python3.11; give ngen's subprocess spawns (e.g. joblib/loky
+# in t-route routing) an unambiguous "python3"/"python" pointing at python3.11.
+RUN ln -sf /usr/bin/python3.11 /usr/local/bin/python3 && \
+    ln -sf /usr/bin/python3.11 /usr/local/bin/python
+
+RUN printf '#!/bin/bash\nunset PYTHONHOME CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_EXE CONDA_SHLVL\nexport PATH=/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:/usr/lib64/mpich/bin\nexport PYTHONPATH=/usr/local/lib/python3.11/site-packages:/usr/local/lib64/python3.11/site-packages:/usr/lib64/python3.11/site-packages:/usr/lib/python3.11/site-packages\nexec /dmod/bin/ngen "$@"\n' > /usr/local/bin/ngen && \
     chmod +x /usr/local/bin/ngen && \
     echo "/dmod/shared_libs/" >> /etc/ld.so.conf.d/ngen.conf && \
     echo "/sundials/lib64" >> /etc/ld.so.conf.d/sundials.conf && \
@@ -263,8 +269,13 @@ RUN printf '#!/bin/bash\nunset PYTHONHOME CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_E
 COPY --from=troute_build /wheels/*.whl /tmp/
 # WORKDIR /ngen
 
-RUN python3.11 -m pip install /tmp/*.whl 
-RUN python3.11 -mpip install ${pinned_python_packages}
+# use the absolute path so conda's PATH entries (base or notebook env) can never
+# shadow a same-named python3.11 binary and silently redirect these installs
+RUN /usr/bin/python3.11 -m pip install /tmp/*.whl
+RUN /usr/bin/python3.11 -m pip install ${pinned_python_packages}
+# fail the build early if wheels landed somewhere the ngen wrapper's PYTHONPATH won't see
+RUN PYTHONPATH=/usr/local/lib/python3.11/site-packages:/usr/local/lib64/python3.11/site-packages:/usr/lib64/python3.11/site-packages:/usr/lib/python3.11/site-packages \
+    /usr/bin/python3.11 -c "import troute; import nwm_routing"
 
 # RUN for whl in /tmp/troute_network*.whl /tmp/troute_routing*.whl /tmp/troute_config*.whl; do \
 #         [ -f "$whl" ] && python3.11 -m pip install "$whl" || true; \
@@ -279,8 +290,7 @@ RUN python3.11 -mpip install ${pinned_python_packages}
 
 ENV PATH=$PATH:/usr/lib64/mpich/bin
 
-# trying to resolve numpy issues... not working!!
-RUN python3.11 -m pip install "numpy=1.26.4"
+RUN /usr/bin/python3.11 -m pip install "numpy==1.26.4"
 
 # ENV PATH="/ngen/.venv/bin:${PATH}"
 
