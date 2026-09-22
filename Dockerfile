@@ -1,4 +1,31 @@
 # syntax=docker/dockerfile:1
+#
+# HEFS-FEWS-Hub Container Image Description
+#
+# This container image is designed to support the exploration of HEFS ensembles using FEWS within a JupyterHub environment, as part of the CIROH-supported project.
+#
+# **Operating System:**
+#   - Based on AlmaLinux 8.10, chosen because FEWS officially supports Red Hat-based distributions, ensuring compatibility and stability for FEWS binaries.
+#
+# **JupyterLab Setup:**
+#   - Installs Miniconda and creates a dedicated Python environment for running JupyterLab and related Python tools.
+#   - JupyterLab is configured to run as the main user interface, providing access to notebooks and Python scripts for data analysis and dashboarding.
+#
+# **XFCE and VNC Desktop Environment:**
+#   - Installs a minimal XFCE desktop environment, providing a lightweight and user-friendly graphical interface.
+#   - TurboVNC is used to enable remote desktop access, allowing users to interact with the desktop environment through their browser or a VNC client.
+#   - This setup allows users to launch and interact with the FEWS standalone application in a familiar desktop environment, directly from the cloud.
+#
+# **Additional Features:**
+#   - Includes AWS CLI for data access, Node.js for JupyterLab extensions, and other utilities (e.g., nano, Thunar file manager).
+#   - FEWS binaries and panel application tools are pre-installed, with desktop shortcuts for easy access.
+#
+# **NGEN Capabilities:**
+#   - Inspired by the NGIAB docker image.
+#   - Pre-installed and compiled within the container, providing the necessary tools for hydrologic model execution and analysis.
+#   - Integrated with the overall HEFS-FEWS-Hub environment, ensuring seamless interaction with JupyterLab and the XFCE desktop environment.
+# This image is intended for use on TEEHRHub or similar JupyterHub deployments, providing a seamless environment for hydrologic model execution and analysis.
+
 
 # ===========================================================
 # STAGE 1: Shared Base Runtime (AlmaLinux 8.10)
@@ -18,19 +45,58 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     dnf install -y epel-release && \
     dnf config-manager --set-enabled powertools && \
     dnf install -y \
-    dpkg dbus-x11 xfce4-session xfce4-panel xfce4-settings xfdesktop xfwm4 xfce4-terminal \
-    featherpad nano Thunar xorg-x11-server-Xorg xorg-x11-xinit xorg-x11-xauth xorg-x11-fonts-* \
-    xorg-x11-utils curl wget git-lfs perl unzip \
-    vim libgfortran sqlite bzip2 expat udunits2 zlib \
-    mpich hdf5 netcdf netcdf-fortran netcdf-cxx netcdf-cxx4-mpich \
-    openblas python3.11 python3.11-devel python3.11-pip which gdb lldb
+    dpkg \
+    dbus-x11 \
+    xfce4-session \
+    xfce4-panel \
+    xfce4-settings \
+    xfdesktop \
+    xfwm4 \
+    xfce4-terminal \
+    featherpad \
+    nano \
+    Thunar \
+    xorg-x11-server-Xorg \
+    xorg-x11-xinit \
+    xorg-x11-xauth \
+    xorg-x11-fonts-* \
+    xorg-x11-utils \
+    curl \
+    wget \
+    git-lfs \
+    perl \
+    unzip \
+    vim \
+    libgfortran \
+    sqlite \
+    bzip2 \
+    expat \
+    udunits2 \
+    zlib \
+    mpich \
+    hdf5 \
+    netcdf \
+    netcdf-fortran \
+    netcdf-cxx \
+    netcdf-cxx4-mpich \
+    openblas \
+    python3.11 \
+    python3.11-devel \
+    python3.11-pip \
+    which \
+    gdb \
+    lldb && \
+    wget https://repo.almalinux.org/almalinux/8/AppStream/x86_64/os/Packages/compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm && \
+    dpkg --add-architecture i386 && \
+    dnf -y install \
+    compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm \
+    libstdc++.i686 \
+    glibc.i686 && \
+    rm compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm && \
+    dnf clean all && \
+    rm -rf /var/cache/dnf
 
 RUN python3.11 -m pip install "numpy<2.0"
-
-RUN wget https://repo.almalinux.org/almalinux/8/AppStream/x86_64/os/Packages/compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm && \
-    dpkg --add-architecture i386 && \
-    dnf -y install compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm libstdc++.i686 glibc.i686 && \
-    rm compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 ENV UV_INSTALL_DIR=/root/.cargo/bin
@@ -44,11 +110,33 @@ RUN uv self update
 FROM base AS build_base
 RUN --mount=type=cache,target=/var/cache/dnf \
     dnf install -y \
-    sudo gcc gcc-c++ make cmake tar git gcc-gfortran sqlite-devel \
-    expat-devel flex bison udunits2-devel zlib-devel \
-    wget mpich-devel hdf5-devel netcdf-devel \
-    netcdf-fortran-devel netcdf-cxx-devel lld clang \
-    openblas-devel unzip gcc-toolset-13-gcc-gfortran gdb
+    sudo \
+    gcc \
+    gcc-c++ \
+    make \
+    cmake \
+    tar \
+    git \
+    gcc-gfortran \
+    sqlite-devel \
+    expat-devel \
+    flex \
+    bison \
+    udunits2-devel \
+    zlib-devel \
+    wget \
+    mpich-devel \
+    hdf5-devel \
+    netcdf-devel \
+    netcdf-fortran-devel \
+    netcdf-cxx-devel \
+    lld \
+    clang \
+    openblas-devel \
+    unzip \
+    gcc-toolset-13-gcc-gfortran \
+    gdb && \
+    dnf clean all
 # AlmaLinux 8 ships ninja 1.8.2; Fortran support requires 1.10+
 RUN wget -q https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-linux.zip && \
     unzip ninja-linux.zip -d /usr/local/bin && \
@@ -226,6 +314,7 @@ RUN mkdir -p /home/${NB_USER}/.vnc && \
     chmod +x /home/${NB_USER}/.vnc/xstartup.turbovnc && \
     chown -R ${NB_USER}:${NB_GID} /home/${NB_USER}/.vnc
 
+# Disable xfce-polkit autostart if it exists (it may come as a dependency)
 RUN mkdir -p /home/${NB_USER}/.config/autostart && \
     echo '[Desktop Entry]' > /home/${NB_USER}/.config/autostart/xfce-polkit.desktop && \
     echo 'Hidden=true' >> /home/${NB_USER}/.config/autostart/xfce-polkit.desktop && \
@@ -234,15 +323,19 @@ RUN mkdir -p /home/${NB_USER}/.config/autostart && \
 # FEWS Binary Setup
 ARG FEWS_VERSION=fews-NA-202202-127109-bin.zip
 COPY --chown=${NB_USER}:${NB_GID} libs/fews/${FEWS_VERSION} /opt/fews/${FEWS_VERSION}
+
 RUN mkdir -p /opt/fews && \
     chown ${NB_USER}:${NB_GID} /opt/fews && \
     su ${NB_USER} -c "unzip /opt/fews/${FEWS_VERSION} -d /opt/fews/" && \
     rm /opt/fews/${FEWS_VERSION} && rm -rf /opt/fews/windows && \
     chmod +x /opt/fews/linux/jre/bin/java
 
+# Install Node.js and npm
 RUN curl -sL https://rpm.nodesource.com/setup_20.x | bash - && \
-    dnf install -y nodejs && npm install -g npm@7.24.0
+    dnf install -y nodejs && \
+    npm install -g npm@7.24.0
 
+# Copy entrypoint script for AWS configuration
 COPY entrypoint.sh /usr/local/bin/entrypoint.sh
 RUN chmod +x /usr/local/bin/entrypoint.sh
 
@@ -298,4 +391,5 @@ USER ${NB_USER}
 WORKDIR /home/jovyan
 
 EXPOSE 8888
+# Set entrypoint to handle AWS configuration
 ENTRYPOINT ["/usr/local/bin/entrypoint.sh"]

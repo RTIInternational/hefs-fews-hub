@@ -6,10 +6,7 @@ if [ -n "$AWS_ACCESS_KEY_ID" ] && [ -n "$AWS_SECRET_ACCESS_KEY" ]; then
     echo "Configuring AWS CLI with provided credentials..."
     
     # Ensure .aws directory exists
-    if ! mkdir -p ${HOME}/.aws 2>/dev/null; then
-        echo "Warning: Could not create ${HOME}/.aws (permission denied). Skipping AWS config."
-        exec "$@"
-    fi
+    mkdir -p ${HOME}/.aws
     
     # Configure AWS credentials
     cat > ${HOME}/.aws/credentials <<EOF
