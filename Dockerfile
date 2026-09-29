@@ -81,6 +81,7 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     netcdf-cxx4-mpich \
     openblas \
     python3.11 \
+    java-17-openjdk-devel \
     python3.11-devel \
     python3.11-pip \
     which \
@@ -298,6 +299,7 @@ ENV PATH=${NB_PYTHON_PREFIX}/bin:${PATH}
 
 COPY dist/hefs_fews_hub-0.3.1-py3-none-any.whl hefs_fews_hub-0.3.1-py3-none-any.whl
 RUN ${NB_PYTHON_PREFIX}/bin/pip install hefs_fews_hub-0.3.1-py3-none-any.whl && rm hefs_fews_hub-0.3.1-py3-none-any.whl
+RUN ${NB_PYTHON_PREFIX}/bin/pip install teehr hvplot hvplot matplotlib seaborn
 
 # TurboVNC Setup
 ARG TURBOVNC_VERSION=3.1

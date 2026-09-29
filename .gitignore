@@ -1,5 +1,7 @@
 # Mounted docker volumes
 .user_home/
+.user_home_latest/
+.test_user_home/
 
 # Container Image Packages when wget is too slow
 libs/*.rpm
