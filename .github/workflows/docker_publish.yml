@@ -12,7 +12,8 @@ on:
 env:
   # Use docker.io for Docker Hub if empty
   GH_REGISTRY: ghcr.io
-  AWS_REGISTRY: 935462133478.dkr.ecr.us-east-2.amazonaws.com
+  # TEEHR Hub runs in us-east-1 since 2026-10-21 (RTIInternational/teehr-hub#462).
+  AWS_REGISTRY: 935462133478.dkr.ecr.us-east-1.amazonaws.com
   # github.repository as <account>/<repo>
   IMAGE_NAME: ${{ github.repository }}
 
@@ -54,7 +55,7 @@ jobs:
         with:
           aws-access-key-id: ${{ secrets.AWI_RTI_HEFS_ACCESS_KEY }}
           aws-secret-access-key: ${{ secrets.AWI_RTI_HEFS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-2
+          aws-region: us-east-1
 
       - name: Login to Amazon ECR
         id: login-ecr
