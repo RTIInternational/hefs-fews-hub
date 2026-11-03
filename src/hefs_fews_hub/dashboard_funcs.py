@@ -111,24 +111,42 @@ def s3_download_directory_cli(prefix, local, bucket=BUCKET_NAME):
             elif line: # and line.startswith("download:"):
                 log_func(line)
         pipe.close()
-    
-    process = subprocess.Popen(
-        [
-            "aws",
-            "s3",
-            "cp",
-            f"s3://{bucket}/HEFS_FEWS/{prefix}",
-            local,
-            "--recursive",
-            "--only-show-errors", # TODO: Consider removing this flag and filter output
-            # in the stream_output function based on content.
-        ],
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        text=True,
-        bufsize=1,
-    )
-    
+
+    if prefix in ['CNRFC', 'NWRFC']:
+        process = subprocess.Popen(
+            [
+                "aws",
+                "s3",
+                "cp",
+                f"s3://{bucket}/FIRO/{prefix}",
+                local,
+                "--recursive",
+                "--only-show-errors", # TODO: Consider removing this flag and filter output
+                # in the stream_output function based on content.
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
+    else:
+        process = subprocess.Popen(
+            [
+                "aws",
+                "s3",
+                "cp",
+                f"s3://{bucket}/HEFS_FEWS/{prefix}",
+                local,
+                "--recursive",
+                "--only-show-errors", # TODO: Consider removing this flag and filter output
+                # in the stream_output function based on content.
+            ],
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            text=True,
+            bufsize=1,
+        )
+
     # Create threads to continuously log stdout and stderr
     stdout_thread = threading.Thread(
         target=stream_output,
