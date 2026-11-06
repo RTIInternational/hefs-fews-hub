@@ -29,9 +29,12 @@ USER root
 RUN --mount=type=cache,target=/var/cache/dnf \
     dnf install epel-release -y
 
-# Install XFCE components individually to save space
+# Install Java 21 headless for the Spark driver, utilities, and individual XFCE components.
+# Use the headless runtime rather than the full JDK to avoid extra desktop dependencies.
 RUN --mount=type=cache,target=/var/cache/dnf \
     dnf install -y --enablerepo=epel \
+    java-21-openjdk-headless \
+    which \
     dpkg \
     dbus-x11 \
     xfce4-session \
@@ -59,6 +62,7 @@ RUN --mount=type=cache,target=/var/cache/dnf \
 RUN wget https://repo.almalinux.org/almalinux/8/AppStream/x86_64/os/Packages/compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm &&\
     dpkg --add-architecture i386 && \
     dnf -y install compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm \
+    libstdc++.x86_64 \
     libstdc++.i686 \
     glibc.i686
     
@@ -126,10 +130,17 @@ ENV PATH=${NB_PYTHON_PREFIX}/bin:${PATH}
 
 # Panel Application setup
 COPY dist/hefs_fews_hub-0.3.1-py3-none-any.whl hefs_fews_hub-0.3.1-py3-none-any.whl
-# Install HEFS FEWS Hub with TEEHR dependency
+# Install HEFS FEWS Hub
 # RUN --mount=type=cache,target=/root/.cache/pip \
 RUN ${NB_PYTHON_PREFIX}/bin/pip install hefs_fews_hub-0.3.1-py3-none-any.whl \
     && rm hefs_fews_hub-0.3.1-py3-none-any.whl
+
+# Install TEEHR into the default Python and Jupyter kernel environment.
+ARG TEEHR_VERSION=main
+RUN ${NB_PYTHON_PREFIX}/bin/python -m pip install --no-cache-dir \
+    "git+https://github.com/RTIInternational/teehr.git@${TEEHR_VERSION}" \
+    && ${NB_PYTHON_PREFIX}/bin/python -m pip check \
+    && ${NB_PYTHON_PREFIX}/bin/python -c "import teehr"
 
 # ===========================================================
 # TurboVNC (https://github.com/TurboVNC/turbovnc)

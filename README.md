@@ -6,6 +6,8 @@ The image is based on AlmaLinux 8.10 (chosen for official FEWS support), and inc
 - **JupyterLab** for interactive Python development and dashboarding
 - **XFCE desktop environment** and **TurboVNC** for a full-featured remote desktop, allowing users to run FEWS in a graphical environment
 - Pre-installed FEWS binaries, and AWS CLI for data access
+- **Java 21 headless runtime** (`java-21-openjdk-headless`) for the Spark driver, plus `which` to locate executables. FEWS retains its bundled runtime.
+- **TEEHR**, installed from its `main` branch into the default `notebook` conda environment. Use `import teehr` directly in Python or the default Jupyter kernel; no activation or extra installation is required. Override `TEEHR_VERSION` with a tag or commit using `--build-arg TEEHR_VERSION=<ref>` when building. Rebuild with `--no-cache` to refresh a moving branch such as `main`.
 - The `hefs-fews-hub` python package (also part of this repository)
 
 This setup enables users to analyze hydrologic ensemble forecasts and interact with FEWS in a cloud-hosted desktop environment.
