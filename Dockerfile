@@ -136,7 +136,7 @@ RUN ${NB_PYTHON_PREFIX}/bin/pip install hefs_fews_hub-0.3.1-py3-none-any.whl \
     && rm hefs_fews_hub-0.3.1-py3-none-any.whl
 
 # Install TEEHR into the default Python and Jupyter kernel environment.
-ARG TEEHR_VERSION=main
+ARG TEEHR_VERSION=v0.8.0
 RUN ${NB_PYTHON_PREFIX}/bin/python -m pip install --no-cache-dir \
     "git+https://github.com/RTIInternational/teehr.git@${TEEHR_VERSION}" \
     && ${NB_PYTHON_PREFIX}/bin/python -m pip check \
