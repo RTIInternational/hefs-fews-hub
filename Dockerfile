@@ -21,13 +21,14 @@
 #
 # This image is intended for use on TEEHRHub or similar JupyterHub deployments, providing a seamless environment for hydrologic model execution and analysis.
 
-FROM almalinux:8.10
+FROM almalinux:8.10 AS base
 # FROM 935462133478.dkr.ecr.us-east-2.amazonaws.com/teehr:v0.4-beta
 
 USER root
 # Install EPEL repository for additional packages
 RUN --mount=type=cache,target=/var/cache/dnf \
-    dnf install epel-release -y
+    dnf install -y epel-release dnf-plugins-core && \
+    dnf config-manager --set-enabled powertools
 
 # Install XFCE components individually to save space
 RUN --mount=type=cache,target=/var/cache/dnf \
@@ -60,6 +61,7 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     expat \
     udunits2 \
     zlib \
+    libaec \
     mpich \
     hdf5 \
     netcdf \
