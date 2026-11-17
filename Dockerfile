@@ -8,7 +8,7 @@
 #   - Based on AlmaLinux 8.10, chosen because FEWS officially supports Red Hat-based distributions, ensuring compatibility and stability for FEWS binaries.
 #
 # **JupyterLab Setup:**
-#   - Installs Miniconda and creates a dedicated Python environment for running JupyterLab and related Python tools.
+#   - Installs Miniforge and creates a dedicated Python environment for running JupyterLab and related Python tools.
 #   - JupyterLab is configured to run as the main user interface, providing access to notebooks and Python scripts for data analysis and dashboarding.
 #
 # **XFCE and VNC Desktop Environment:**
@@ -81,7 +81,6 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     netcdf-cxx4-mpich \
     openblas \
     python3.11 \
-    java-17-openjdk-devel \
     python3.11-devel \
     python3.11-pip \
     which \
@@ -93,11 +92,13 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm \
     libstdc++.i686 \
     glibc.i686 && \
-    rm compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm && \
-    dnf clean all && \
-    rm -rf /var/cache/dnf
+    rm compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm
+# No `dnf clean all` / `rm -rf /var/cache/dnf`: the cache mount already keeps the
+# dnf cache out of the layer, and removing the mount point fails the build.
 
-RUN python3.11 -m pip install "numpy<2.0"
+# Same numpy as the final image, so ngen's Python/NumPy integration is compiled
+# against the ABI that ships.
+RUN /usr/bin/python3.11 -m pip install "numpy==1.26.4"
 
 ENV PATH="/root/.cargo/bin:${PATH}"
 ENV UV_INSTALL_DIR=/root/.cargo/bin
@@ -136,8 +137,7 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     openblas-devel \
     unzip \
     gcc-toolset-13-gcc-gfortran \
-    gdb && \
-    dnf clean all
+    gdb
 # AlmaLinux 8 ships ninja 1.8.2; Fortran support requires 1.10+
 RUN wget -q https://github.com/ninja-build/ninja/releases/download/v1.11.1/ninja-linux.zip && \
     unzip ninja-linux.zip -d /usr/local/bin && \
@@ -238,14 +238,15 @@ RUN cmake -B cmake_build -DISO_C_FORTRAN_BMI_PATH=/ngen/ngen/extern/iso_c_fortra
 FROM ngen_build AS restructure_files
 RUN mkdir -p /dmod/datasets /dmod/datasets/static /dmod/shared_libs /dmod/bin /dmod/utils/ && \
     shopt -s globstar && \
-    cp -a ./extern/**/cmake_build/*.so* /dmod/shared_libs/. || true && \
+    (cp -a ./extern/**/cmake_build/*.so* /dmod/shared_libs/. || true) && \
     cp -a ./extern/noah-owp-modular/**/*.TBL /dmod/datasets/static && \
     cp -a ./extern/lgar-c/LGAR-C/data/vG_default_params.dat /dmod/datasets/static && \
-    cp -a ./cmake_build_parallel/ngen /dmod/bin/ngen-parallel || true && \
-    cp -a ./cmake_build_serial/ngen /dmod/bin/ngen-serial || true && \
-    cp -a ./cmake_build_parallel/partitionGenerator /dmod/bin/partitionGenerator || true && \
+    (cp -a ./cmake_build_parallel/ngen /dmod/bin/ngen-parallel || true) && \
+    (cp -a ./cmake_build_serial/ngen /dmod/bin/ngen-serial || true) && \
+    (cp -a ./cmake_build_parallel/partitionGenerator /dmod/bin/partitionGenerator || true) && \
     cp -ar ./utilities/* /dmod/utils/ && \
-    cd /dmod/bin && (stat ngen-parallel && ln -s ngen-parallel ngen) || (stat ngen-serial && ln -s ngen-serial ngen)
+    cd /dmod/bin && \
+    if [ -e ngen-parallel ]; then ln -s ngen-parallel ngen; else ln -s ngen-serial ngen; fi
 
 COPY --from=build_summa /ngen/ngen/extern/summa/build_summa/*.so /dmod/shared_libs/
 COPY --from=build_sacsma /ngen/ngen/extern/sac-sma/cmake_build/*.so /dmod/shared_libs/
@@ -255,7 +256,7 @@ COPY --from=build_snow17 /ngen/ngen/extern/snow17/cmake_build/*.so /dmod/shared_
 # STAGE 5: Final Target (Unchanged HEFS-FEWS-Hub + NGEN Copies)
 # ===========================================================
 FROM build_base AS final
-ARG pinned_python_packages="netCDF4==1.6.3 pydantic<2 pandas<3"
+ARG pinned_python_packages="numpy==1.26.4 netCDF4==1.6.3 pydantic<2 pandas<3"
 USER root
 
 # RUN --mount=type=cache,target=/var/cache/dnf \
@@ -280,7 +281,9 @@ RUN echo ". ${CONDA_DIR}/etc/profile.d/conda.sh ; conda activate ${CONDA_ENV}" >
 RUN groupadd -g ${NB_GID} ${NB_USER} || true && useradd -m -s /bin/bash -u ${NB_UID} -g ${NB_GID} ${NB_USER}
 
 ENV PATH=${CONDA_DIR}/bin:${PATH}
-RUN chown -R ${NB_USER}:${NB_GID} /opt/
+# Not recursive: /opt already holds gcc-toolset-13 (from build_base), and a
+# recursive chown would copy it into a new layer and make it writable by jovyan.
+RUN chown ${NB_USER}:${NB_GID} /opt
 
 RUN echo "Installing Miniforge..." && \
     URL="https://github.com/conda-forge/miniforge/releases/latest/download/Miniforge3-Linux-$(uname -m).sh" && \
@@ -299,7 +302,11 @@ ENV PATH=${NB_PYTHON_PREFIX}/bin:${PATH}
 
 COPY dist/hefs_fews_hub-0.3.1-py3-none-any.whl hefs_fews_hub-0.3.1-py3-none-any.whl
 RUN ${NB_PYTHON_PREFIX}/bin/pip install hefs_fews_hub-0.3.1-py3-none-any.whl && rm hefs_fews_hub-0.3.1-py3-none-any.whl
-RUN ${NB_PYTHON_PREFIX}/bin/pip install teehr hvplot hvplot matplotlib seaborn
+RUN ${NB_PYTHON_PREFIX}/bin/pip install teehr==0.8.0 hvplot matplotlib seaborn
+
+# Java runtime for teehr (pyspark); FEWS uses its own bundled JRE in /opt/fews.
+RUN --mount=type=cache,target=/var/cache/dnf \
+    dnf install -y java-17-openjdk-headless
 
 # TurboVNC Setup
 ARG TURBOVNC_VERSION=3.1
@@ -359,33 +366,19 @@ RUN printf '#!/bin/bash\nunset PYTHONHOME CONDA_PREFIX CONDA_DEFAULT_ENV CONDA_E
     echo "/sundials/lib64" >> /etc/ld.so.conf.d/sundials.conf && \
     ldconfig -v
 
-    # install t-route wheels; troute-nwm (ngen_routing) must be installed last and
-    # separately — installing all wheels together against system python silently drops it.
-COPY --from=troute_build /wheels/*.whl /tmp/
-# WORKDIR /ngen
-
-# use the absolute path so conda's PATH entries (base or notebook env) can never
-# shadow a same-named python3.11 binary and silently redirect these installs
-RUN /usr/bin/python3.11 -m pip install /tmp/*.whl
-RUN /usr/bin/python3.11 -m pip install ${pinned_python_packages}
-# fail the build early if wheels landed somewhere the ngen wrapper's PYTHONPATH won't see
+# Install the t-route wheels, then the pins (incl. numpy), into the system python3.11.
+# The wheels are bind-mounted so they never end up in an image layer.
+# Use the absolute path so conda's PATH entries (base or notebook env) can never
+# shadow a same-named python3.11 binary and silently redirect these installs.
+RUN --mount=type=bind,from=troute_build,source=/wheels,target=/wheels \
+    /usr/bin/python3.11 -m pip install /wheels/*.whl && \
+    /usr/bin/python3.11 -m pip install ${pinned_python_packages}
+# Fail the build early if wheels landed somewhere the ngen wrapper's PYTHONPATH
+# won't see. Runs after the pins, so it checks the numpy that actually ships.
 RUN PYTHONPATH=/usr/local/lib/python3.11/site-packages:/usr/local/lib64/python3.11/site-packages:/usr/lib64/python3.11/site-packages:/usr/lib/python3.11/site-packages \
     /usr/bin/python3.11 -c "import troute; import nwm_routing"
 
-# RUN for whl in /tmp/troute_network*.whl /tmp/troute_routing*.whl /tmp/troute_config*.whl; do \
-#         [ -f "$whl" ] && python3.11 -m pip install "$whl" || true; \
-#     done && \
-#     for whl in /tmp/nwm_routing*.whl; do \
-#         [ -f "$whl" ] && python3.11 -m pip install --no-build-isolation "$whl" || true; \
-#     done && \
-#     rm -f /tmp/*.whl
-
-# RUN python3.11 -m pip install ${pinned_python_packages} 
-
-
 ENV PATH=$PATH:/usr/lib64/mpich/bin
-
-RUN /usr/bin/python3.11 -m pip install "numpy==1.26.4"
 
 # ENV PATH="/ngen/.venv/bin:${PATH}"
 

@@ -16,6 +16,8 @@ with contextlib.suppress(ImportError):
     s3 = s3fs.S3FileSystem(anon=False)
 
 BUCKET_NAME = "ciroh-rti-hefs-data"
+# RFCs whose RegionHome is downloaded from FIRO/<RFC> instead of HEFS_FEWS/<RFC>
+FIRO_RFCS = {"CNRFC", "NWRFC"}
 FEWS_INSTALL_DIR = Path("/opt", "fews")
 
 def set_up_logger(file_path: Union[str, Path]) -> logging.Logger:
@@ -106,46 +108,29 @@ def s3_download_directory_cli(prefix, local, bucket=BUCKET_NAME):
         """Read lines from pipe and log them."""
         for line in iter(pipe.readline, ''):
             line = line.rstrip()
-            if log_func == logger.error and line:
-                log_func(line)
-            elif line: # and line.startswith("download:"):
+            if line:  # and line.startswith("download:"):
                 log_func(line)
         pipe.close()
 
-    if prefix in ['CNRFC', 'NWRFC']:
-        process = subprocess.Popen(
-            [
-                "aws",
-                "s3",
-                "cp",
-                f"s3://{bucket}/FIRO/{prefix}",
-                local,
-                "--recursive",
-                "--only-show-errors", # TODO: Consider removing this flag and filter output
-                # in the stream_output function based on content.
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-        )
-    else:
-        process = subprocess.Popen(
-            [
-                "aws",
-                "s3",
-                "cp",
-                f"s3://{bucket}/HEFS_FEWS/{prefix}",
-                local,
-                "--recursive",
-                "--only-show-errors", # TODO: Consider removing this flag and filter output
-                # in the stream_output function based on content.
-            ],
-            stdout=subprocess.PIPE,
-            stderr=subprocess.PIPE,
-            text=True,
-            bufsize=1,
-        )
+    top_folder = "FIRO" if prefix in FIRO_RFCS else "HEFS_FEWS"
+    source = f"s3://{bucket}/{top_folder}/{prefix}"
+    logger.info(f"Download source: {source}")
+    process = subprocess.Popen(
+        [
+            "aws",
+            "s3",
+            "cp",
+            source,
+            local,
+            "--recursive",
+            "--only-show-errors", # TODO: Consider removing this flag and filter output
+            # in the stream_output function based on content.
+        ],
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,
+        text=True,
+        bufsize=1,
+    )
 
     # Create threads to continuously log stdout and stderr
     stdout_thread = threading.Thread(
