@@ -58,6 +58,10 @@ RUN --mount=type=cache,target=/var/cache/dnf \
     unzip && \
     dnf clean all
 
+# Pin Spark to Java 21. pyspark prefers $JAVA_HOME over PATH, so this keeps it off any
+# other JRE that lands first on PATH (e.g. FEWS's bundled, older one under /opt/fews).
+ENV JAVA_HOME=/usr/lib/jvm/jre-21
+
     
 RUN wget https://repo.almalinux.org/almalinux/8/AppStream/x86_64/os/Packages/compat-libgfortran-48-4.8.5-36.1.el8.i686.rpm &&\
     dpkg --add-architecture i386 && \
@@ -136,11 +140,34 @@ RUN ${NB_PYTHON_PREFIX}/bin/pip install hefs_fews_hub-0.3.1-py3-none-any.whl \
     && rm hefs_fews_hub-0.3.1-py3-none-any.whl
 
 # Install TEEHR into the default Python and Jupyter kernel environment.
+# `pip check` is compared against a pre-install baseline so that only conflicts the
+# TEEHR install introduces fail the build; conflicts already present in the conda env
+# (e.g. conda-forge awscli v2's tight pins) are left alone.
 ARG TEEHR_VERSION=v0.8.0
-RUN ${NB_PYTHON_PREFIX}/bin/python -m pip install --no-cache-dir \
-    "git+https://github.com/RTIInternational/teehr.git@${TEEHR_VERSION}" \
-    && ${NB_PYTHON_PREFIX}/bin/python -m pip check \
-    && ${NB_PYTHON_PREFIX}/bin/python -c "import teehr"
+RUN set -eu; \
+    py="${NB_PYTHON_PREFIX}/bin/python"; \
+    "$py" -m pip check | sort > /tmp/pip-check-before.txt; \
+    "$py" -m pip install --no-cache-dir \
+        "git+https://github.com/RTIInternational/teehr.git@${TEEHR_VERSION}"; \
+    "$py" -m pip check | sort > /tmp/pip-check-after.txt; \
+    new_conflicts="$(comm -13 /tmp/pip-check-before.txt /tmp/pip-check-after.txt \
+        | grep -v '^No broken requirements found' || true)"; \
+    rm -f /tmp/pip-check-before.txt /tmp/pip-check-after.txt; \
+    if [ -n "$new_conflicts" ]; then \
+        echo "TEEHR install introduced dependency conflicts:" >&2; \
+        echo "$new_conflicts" >&2; \
+        exit 1; \
+    fi; \
+    "$py" -c "import teehr"
+
+# Smoke-test the Java/Spark runtime TEEHR depends on. `import teehr` never starts a JVM,
+# so without this a broken Java setup ships and users first see JAVA_GATEWAY_EXITED.
+RUN "${JAVA_HOME}/bin/java" -version \
+    && SPARK_LOCAL_IP=127.0.0.1 ${NB_PYTHON_PREFIX}/bin/python -c \
+    "from pyspark.sql import SparkSession; \
+s = SparkSession.builder.master('local[1]').appName('build-smoke-test').getOrCreate(); \
+assert s.range(3).count() == 3; \
+s.stop()"
 
 # ===========================================================
 # TurboVNC (https://github.com/TurboVNC/turbovnc)
