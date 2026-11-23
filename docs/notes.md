@@ -69,7 +69,7 @@ sudo chown 1000:100 .user_home
 ```
 
 ### Using AWS CLI to copy files to/from the s3 bucket
-An AWS s3 bucket was created: `ciroh-rti-hefs-data`. Read permissions are publicly available however you will need special credentials to write to the bucket.
+The AWS S3 bucket is `ciroh-rti-hefs-data-use1` in `us-east-1`. Read permissions are publicly available, however you will need special credentials to write to the bucket.
 
 
 ### Using Docker Compose (recommended)
@@ -124,29 +124,29 @@ AWS Secret Access Key [None]:
 Default region name [None]:
 Default output format [None]:
 ```
-Enter your access key, secret access key and `us-east-2` for region name. Hit enter to accept the default (None) value for output format.
+Enter your access key, secret access key and `us-east-1` for region name. Hit enter to accept the default (None) value for output format.
 
 Now you should have access to the s3 bucket using AWS CLI.
 
 ### Copying data to/from the s3 bucket
 To list data in the s3 bucket:
 ```bash
-aws s3 ls ciroh-rti-hefs-data
+aws s3 ls s3://ciroh-rti-hefs-data-use1
 ```
 
 To copy a local file to the bucket:
 ```bash
-aws s3 cp <local_filename> s3://ciroh-rti-hefs-data/<remote_filename>
+aws s3 cp <local_filename> s3://ciroh-rti-hefs-data-use1/<remote_filename>
 ```
 
 To recursively copy a local directory to s3:
 ```bash
-aws s3 cp <path to local dir> s3://ciroh-rti-hefs-data/ --recursive
+aws s3 cp <path to local dir> s3://ciroh-rti-hefs-data-use1/ --recursive
 ```
 
 To download s3 objects to local:
 ```bash
-aws s3 cp s3://ciroh-rti-hefs-data/<remote_filename> <local_filename>
+aws s3 cp s3://ciroh-rti-hefs-data-use1/<remote_filename> <local_filename>
 ```
 
 More details are listed here: [AWS CLI cp Reference](https://docs.aws.amazon.com/cli/latest/reference/s3/cp.html)

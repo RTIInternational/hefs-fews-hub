@@ -15,7 +15,7 @@ with contextlib.suppress(ImportError):
     import s3fs
     s3 = s3fs.S3FileSystem(anon=False)
 
-BUCKET_NAME = "ciroh-rti-hefs-data"
+BUCKET_NAME = "ciroh-rti-hefs-data-use1"
 FEWS_INSTALL_DIR = Path("/opt", "fews")
 
 def set_up_logger(file_path: Union[str, Path]) -> logging.Logger:

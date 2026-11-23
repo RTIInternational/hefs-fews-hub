@@ -23,7 +23,7 @@ EOF
     # Configure AWS region
     cat > ${HOME}/.aws/config <<EOF
 [default]
-region = ${AWS_DEFAULT_REGION:-us-east-2}
+region = ${AWS_DEFAULT_REGION:-us-east-1}
 output = json
 EOF
     

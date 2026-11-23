@@ -47,7 +47,7 @@ RFC_BOUNDARIES = Path(__file__).parent / "geo" / "rfc_boundaries.geojson"
 FEWS_INSTALL_DIR = Path("/opt", "fews")
 MAP_CENTER_X = 38.80
 MAP_CENTER_Y = -99.14
-BUCKET_NAME = "ciroh-rti-hefs-data"
+BUCKET_NAME = "ciroh-rti-hefs-data-use1"
 RFC_IDS = [
     "ABRFC",
     "APRFC",

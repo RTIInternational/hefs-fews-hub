@@ -133,11 +133,11 @@ ENV NB_PYTHON_PREFIX=${CONDA_DIR}/envs/${CONDA_ENV}
 ENV PATH=${NB_PYTHON_PREFIX}/bin:${PATH}
 
 # Panel Application setup
-COPY dist/hefs_fews_hub-0.3.1-py3-none-any.whl hefs_fews_hub-0.3.1-py3-none-any.whl
+COPY dist/hefs_fews_hub-0.3.3-py3-none-any.whl hefs_fews_hub-0.3.3-py3-none-any.whl
 # Install HEFS FEWS Hub
 # RUN --mount=type=cache,target=/root/.cache/pip \
-RUN ${NB_PYTHON_PREFIX}/bin/pip install hefs_fews_hub-0.3.1-py3-none-any.whl \
-    && rm hefs_fews_hub-0.3.1-py3-none-any.whl
+RUN ${NB_PYTHON_PREFIX}/bin/pip install hefs_fews_hub-0.3.3-py3-none-any.whl \
+    && rm hefs_fews_hub-0.3.3-py3-none-any.whl
 
 # Install TEEHR into the default Python and Jupyter kernel environment.
 # `pip check` is compared against a pre-install baseline so that only conflicts the

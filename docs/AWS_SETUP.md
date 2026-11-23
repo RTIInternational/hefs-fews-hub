@@ -13,7 +13,7 @@ This project uses AWS CLI and requires credentials for local development.
    ```
    AWS_ACCESS_KEY_ID=your_actual_access_key
    AWS_SECRET_ACCESS_KEY=your_actual_secret_key
-   AWS_DEFAULT_REGION=us-east-2
+   AWS_DEFAULT_REGION=us-east-1
    ```
 
 3. **Build and run the container:**
@@ -50,7 +50,7 @@ If using temporary credentials (e.g., from AWS SSO or assumed roles), add the se
 AWS_ACCESS_KEY_ID=your_access_key
 AWS_SECRET_ACCESS_KEY=your_secret_key
 AWS_SESSION_TOKEN=your_session_token
-AWS_DEFAULT_REGION=us-east-2
+AWS_DEFAULT_REGION=us-east-1
 ```
 
 ## Troubleshooting
